@@ -1,0 +1,26 @@
+from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials
+
+from app.controllers.auth_controller import current_user_auth_controller
+from app.config.database.mongodb_connection import get_database
+from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.repositories.user_repository import UserRepository
+
+
+def get_user_repository(request: Request) -> UserRepository:
+    return UserRepository(get_database(request))
+
+
+def get_refresh_token_repository(request: Request) -> RefreshTokenRepository:
+    return RefreshTokenRepository(get_database(request))
+
+
+def current_user(request: Request, users: UserRepository = Depends(get_user_repository)):
+    authorization = request.headers.get("Authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    credentials = (
+        HTTPAuthorizationCredentials(scheme=scheme, credentials=token)
+        if scheme.lower() == "bearer" and token
+        else None
+    )
+    return current_user_auth_controller(credentials, users)
