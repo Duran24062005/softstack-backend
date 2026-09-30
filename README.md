@@ -43,3 +43,10 @@ No guardes credenciales reales en el repositorio.
 ## Despliegue
 
 El proyecto incluye `vercel.json` para Vercel. Define `MONGODB_URI` y `MONGODB_DATABASE` como variables de entorno en la plataforma.
+
+
+## Estructura de autenticación
+
+La autenticación se organiza por responsabilidades: `routes` define endpoints, `controllers` coordina entradas y errores, `services` contiene la lógica de negocio, `repositories` accede a MongoDB y `core` centraliza seguridad y excepciones. Los middlewares de CORS, autenticación Bearer y roles se registran desde `app/main.py`.
+
+Para proteger una ruta por rol, usa `Depends(require_roles("admin"))` desde `app.middlewares.role_middleware`.
