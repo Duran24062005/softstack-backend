@@ -28,7 +28,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         client.close()
 
 
-app = FastAPI(title=app_config["APP_NAME"], version=app_config["VERSION"], lifespan=lifespan)
+app = FastAPI(
+    title=app_config["APP_NAME"], 
+    description=app_config["DESCRIPTION"],
+    version=app_config["VERSION"], 
+    lifespan=lifespan,
+)
 register_exception_handlers(app)
 add_cors_middleware(app)
 add_auth_middleware(app)
