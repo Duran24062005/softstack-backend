@@ -1,0 +1,12 @@
+[project]
+name = "softstack-backend"
+version = "0.1.0"
+description = "This is the Back-End project the Soft-Stack project."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.142.2",
+    "pydantic>=2.13.5",
+    "pymongo>=4.18.2",
+    "uvicorn>=0.54.0",
+]
