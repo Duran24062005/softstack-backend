@@ -12,6 +12,14 @@ El `MongoClient` se crea una vez durante el lifespan de FastAPI, se expone en `a
 
 La autenticación se encuentra bajo `/auth`: registro, login, `/me` y el contrato inicial de reset de contraseña. Los access tokens JWT se validan con Bearer; los refresh tokens se almacenan en `refresh_tokens` únicamente como hashes.
 
+## Vertical implementada: sesión, aprendizaje y edición
+
+La primera vertical funcional mantiene compatibilidad con Bearer, pero el cliente web usa una sesión de cookies HttpOnly (`softstack_access` y `softstack_refresh`). Registro y login crean la sesión; refresh rota el refresh token; logout lo revoca y limpia ambas cookies. El perfil admite `full_name`, email y cambio de contraseña protegido por la contraseña actual.
+
+El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra de forma idempotente la finalización por usuario y lección. Los endpoints administrativos requieren `require_roles("admin")`; el frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
+
+El seed inicial se ejecuta explícitamente con `uv run python scripts/seed_content.py` y no se dispara durante el arranque de la API.
+
 ## Core y middlewares
 
 - `app/core/security.py` contiene hashing Argon2id y emisión/validación de JWT.

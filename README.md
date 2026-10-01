@@ -39,6 +39,27 @@ No guardes credenciales reales en el repositorio.
 
 - `GET /` — confirma que la API está funcionando.
 - `GET /health` — comprueba MongoDB; responde `200` si está disponible y `503` si no lo está.
+- `POST /auth/register` y `POST /auth/login` — crean sesión mediante cookies HttpOnly.
+- `POST /auth/refresh` y `POST /auth/logout` — rotan o revocan la sesión.
+- `GET /auth/me` y `PATCH /auth/me` — consultan y editan el perfil.
+- `GET /modules`, `GET /modules/{id}/lessons` y `GET /lessons/{id}` — contenido publicado.
+- `GET /admin/modules` — lista módulos en cualquier estado para administradores.
+- `GET /admin/modules/{id}` y `GET /admin/modules/{id}/lessons` — consulta un módulo y sus lecciones, incluidos borradores.
+- `POST /admin/modules` y `PATCH /admin/modules/{id}` — crea y actualiza módulos.
+- `POST /admin/modules/{id}/lessons`, `GET /admin/lessons/{id}` y `PATCH /admin/lessons/{id}` — gestión de lecciones para administradores.
+- `GET /me/progress` y `POST /lessons/{id}/complete` — progreso del estudiante.
+
+Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend.
+
+## Contenido inicial
+
+Con MongoDB disponible, carga los módulos y lecciones iniciales con:
+
+```bash
+uv run python scripts/seed_content.py
+```
+
+El seed es idempotente: puede repetirse sin duplicar módulos ni lecciones.
 
 ## Despliegue
 
