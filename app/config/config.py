@@ -9,6 +9,13 @@ def _env_int(name: str, default: int) -> int:
     return int(value) if value else default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
 
 def _parse_cors_origins() -> list[str]:
     raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
@@ -43,4 +50,12 @@ security_config = {
     "REFRESH_TOKEN_EXPIRE_DAYS": _env_int("REFRESH_TOKEN_EXPIRE_DAYS", 30),
     "PASSWORD_HASH_SCHEME": os.getenv("PASSWORD_HASH_SCHEME", "argon2id"),
     "ADMIN_EMAILS": _parse_csv("ADMIN_EMAILS"),
+}
+
+cookie_config = {
+    "ACCESS_COOKIE_NAME": os.getenv("ACCESS_COOKIE_NAME", "softstack_access"),
+    "REFRESH_COOKIE_NAME": os.getenv("REFRESH_COOKIE_NAME", "softstack_refresh"),
+    "SECURE": _env_bool("COOKIE_SECURE", False),
+    "SAMESITE": os.getenv("COOKIE_SAMESITE", "lax"),
+    "DOMAIN": os.getenv("COOKIE_DOMAIN") or None,
 }

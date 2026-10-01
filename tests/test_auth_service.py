@@ -6,7 +6,7 @@ import pytest
 
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
-from app.services.auth_service import AuthenticationError, authenticate, register_user
+from app.services.auth_service import AuthenticationError, authenticate, register_user, update_profile
 from app.core.security import decode_access_token, hash_token
 
 
@@ -50,3 +50,18 @@ def test_login_rejects_invalid_credentials():
         authenticate(users, refresh_tokens, "missing@example.com", "wrong-password")
 
     refresh_tokens.create.assert_not_called()
+
+
+def test_profile_update_requires_current_password_for_email_and_password():
+    users = Mock(spec=UserRepository)
+    users.update.side_effect = lambda user_id, changes: {"_id": user_id, "email": changes.get("email", "person@example.com"), "full_name": changes.get("full_name", "Alex"), "role": "user", "is_active": True, "created_at": datetime.now(timezone.utc)}
+    from app.core.security import hash_password
+    user = {"_id": "user-1", "email": "person@example.com", "full_name": "Alex", "password_hash": hash_password("old-password"), "role": "user", "is_active": True, "created_at": datetime.now(timezone.utc)}
+
+    with pytest.raises(AuthenticationError):
+        update_profile(users, user, email="new@example.com", new_password="new-password")
+
+    result = update_profile(users, user, full_name="Alex Rivera", email="new@example.com", current_password="old-password", new_password="new-password")
+
+    assert result["email"] == "new@example.com"
+    assert users.update.call_args.args[1]["full_name"] == "Alex Rivera"

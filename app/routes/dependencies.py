@@ -18,6 +18,10 @@ def get_refresh_token_repository(request: Request) -> RefreshTokenRepository:
 def current_user(request: Request, users: UserRepository = Depends(get_user_repository)):
     authorization = request.headers.get("Authorization", "")
     scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        from app.config.config import cookie_config
+        token = request.cookies.get(cookie_config["ACCESS_COOKIE_NAME"], "")
+        scheme = "Bearer" if token else ""
     credentials = (
         HTTPAuthorizationCredentials(scheme=scheme, credentials=token)
         if scheme.lower() == "bearer" and token

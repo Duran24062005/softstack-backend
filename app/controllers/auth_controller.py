@@ -13,12 +13,12 @@ from app.core.security import decode_access_token
 from app.models.auth import public_user
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
-from app.services.auth_service import authenticate, register_user
+from app.services.auth_service import authenticate, register_user, refresh_session, update_profile
 
 
-def register_user_controller(users: UserRepository, email: str, password: str):
+def register_user_controller(users: UserRepository, email: str, password: str, full_name: str):
     try:
-        return register_user(users, email, password)
+        return register_user(users, email, password, full_name)
     except ConflictError:
         raise
 
@@ -28,6 +28,14 @@ def login_controller(users: UserRepository, refresh_tokens: RefreshTokenReposito
         return authenticate(users, refresh_tokens, email, password)
     except AuthenticationError:
         raise
+
+
+def refresh_controller(users: UserRepository, refresh_tokens: RefreshTokenRepository, token: str):
+    return refresh_session(users, refresh_tokens, token)
+
+
+def update_profile_controller(users: UserRepository, user, payload):
+    return update_profile(users, user, full_name=payload.full_name, email=payload.email, current_password=payload.current_password, new_password=payload.new_password)
 
 
 def current_user_controller(user):

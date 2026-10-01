@@ -22,6 +22,11 @@ class ConflictError(ApplicationError):
     detail = "Resource already exists"
 
 
+class NotFoundError(ApplicationError):
+    status_code = 404
+    detail = "Resource not found"
+
+
 class InvalidTokenError(ApplicationError):
     status_code = 401
     detail = "Invalid authentication credentials"

@@ -18,3 +18,9 @@ class RefreshTokenRepository:
 
     def revoke(self, token_hash: str) -> None:
         self.collection.update_one({"token_hash": token_hash}, {"$set": {"revoked_at": datetime.now(timezone.utc)}})
+
+    def revoke_for_user(self, user_id: Any) -> None:
+        self.collection.update_many(
+            {"user_id": user_id, "revoked_at": None},
+            {"$set": {"revoked_at": datetime.now(timezone.utc)}},
+        )

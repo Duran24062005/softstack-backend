@@ -21,3 +21,8 @@ class UserRepository:
 
     def touch(self, user_id: Any) -> None:
         self.collection.update_one({"_id": user_id}, {"$set": {"updated_at": datetime.now(timezone.utc)}})
+
+    def update(self, user_id: Any, changes: dict[str, Any]) -> dict[str, Any] | None:
+        changes = {**changes, "updated_at": datetime.now(timezone.utc)}
+        self.collection.update_one({"_id": user_id}, {"$set": changes})
+        return self.find_by_id(user_id)

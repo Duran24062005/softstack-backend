@@ -41,3 +41,10 @@ def decode_access_token(token: str) -> dict[str, Any]:
     if payload.get("type") != "access" or not payload.get("sub"):
         raise jwt.InvalidTokenError("invalid access token")
     return payload
+
+
+def decode_refresh_token(token: str) -> dict[str, Any]:
+    payload = jwt.decode(token, security_config["JWT_SECRET_KEY"], algorithms=[security_config["JWT_ALGORITHM"]])
+    if payload.get("type") != "refresh" or not payload.get("sub"):
+        raise jwt.InvalidTokenError("invalid refresh token")
+    return payload
