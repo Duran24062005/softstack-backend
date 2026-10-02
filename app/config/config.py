@@ -69,3 +69,11 @@ cookie_config = {
     "SAMESITE": os.getenv("COOKIE_SAMESITE", "lax"),
     "DOMAIN": os.getenv("COOKIE_DOMAIN") or None,
 }
+
+blob_config = {
+    "STORE_ID": os.getenv("BLOB_STORE_ID", ""),
+    "READ_WRITE_TOKEN": os.getenv("BLOB_READ_WRITE_TOKEN", ""),
+    "ACCESS": "private",
+    "MAX_FILE_SIZE_BYTES": 3_000_000,
+    "ALLOWED_CONTENT_TYPES": {"image/jpeg", "image/png", "image/webp"},
+}

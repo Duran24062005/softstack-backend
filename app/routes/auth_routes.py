@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 
 from app.controllers.auth_controller import (
     current_user_controller,
@@ -12,9 +13,11 @@ from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.core.exception import InvalidTokenError
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
-from app.routes.dependencies import current_user, get_account_email_service, get_refresh_token_repository, get_user_repository
+from app.routes.dependencies import current_user, get_account_email_service, get_blob_storage, get_refresh_token_repository, get_user_repository
 from app.schemas.auth import AuthResponse, EmailRequest, LoginRequest, ProfileUpdateRequest, RegisterRequest, ResetPasswordRequest, UserResponse
 from app.services.account_email_service import AccountEmailService
+from app.services.blob_storage import VercelBlobStorage
+from app.services.profile_photo_service import ProfilePhotoService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -101,3 +104,40 @@ def me(user=Depends(current_user)):
 @router.patch("/me", response_model=UserResponse)
 def update_me(payload: ProfileUpdateRequest, user=Depends(current_user), users: UserRepository = Depends(get_user_repository)):
     return update_profile_controller(users, user, payload)
+
+
+@router.post("/me/profile-photo", response_model=UserResponse)
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    user=Depends(current_user),
+    users: UserRepository = Depends(get_user_repository),
+    storage: VercelBlobStorage = Depends(get_blob_storage),
+):
+    return await ProfilePhotoService(users, storage).upload(user, file)
+
+
+@router.get("/me/profile-photo")
+async def get_profile_photo(
+    user=Depends(current_user),
+    storage: VercelBlobStorage = Depends(get_blob_storage),
+):
+    result, photo = await ProfilePhotoService(None, storage).get(user)
+    return StreamingResponse(
+        result.stream,
+        media_type=photo["content_type"],
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": "inline",
+            "ETag": photo.get("etag", ""),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.delete("/me/profile-photo", response_model=UserResponse)
+async def delete_profile_photo(
+    user=Depends(current_user),
+    users: UserRepository = Depends(get_user_repository),
+    storage: VercelBlobStorage = Depends(get_blob_storage),
+):
+    return await ProfilePhotoService(users, storage).delete(user)

@@ -47,6 +47,7 @@ class UserResponse(BaseModel):
     role: UserRole
     is_active: bool
     email_verified: bool
+    has_profile_photo: bool = False
     created_at: datetime
 
 

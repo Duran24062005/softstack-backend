@@ -17,6 +17,7 @@ class User(BaseModel):
     full_name: str = ""
     email: EmailStr
     password_hash: str
+    profile_photo: dict[str, Any] | None = None
     role: UserRole = UserRole.USER
     is_active: bool = True
     email_verified: bool = True
@@ -43,5 +44,6 @@ def public_user(document: dict[str, Any]) -> dict[str, Any]:
         "role": document["role"],
         "is_active": document["is_active"],
         "email_verified": document.get("email_verified", True),
+        "has_profile_photo": bool(document.get("profile_photo")),
         "created_at": document["created_at"],
     }

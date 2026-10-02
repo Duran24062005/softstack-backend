@@ -52,6 +52,21 @@ class NotImplementedApplicationError(ApplicationError):
     detail = "Feature is not implemented yet"
 
 
+class InvalidProfilePhotoError(ApplicationError):
+    status_code = 400
+    detail = "Invalid profile photo"
+
+
+class BlobStorageUnavailableError(ApplicationError):
+    status_code = 503
+    detail = "Profile photo storage is unavailable"
+
+
+class BlobStorageOperationError(ApplicationError):
+    status_code = 502
+    detail = "Could not process profile photo storage"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApplicationError)
     async def application_error_handler(_: Request, error: ApplicationError) -> JSONResponse:
