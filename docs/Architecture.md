@@ -1,5 +1,24 @@
 # Arquitectura del backend
 
+## Flujo real de fotos de perfil
+
+La foto de perfil sigue este flujo:
+
+```text
+Usuario autenticado
+        │ multipart/form-data
+        ▼
+Next.js BFF /api/backend/auth/me/profile-photo
+        │ cookies de sesión
+        ▼
+FastAPI /auth/me/profile-photo
+        ├── valida MIME, firma y tamaño
+        ├── guarda metadatos en MongoDB.users
+        └── carga/lee/elimina el binario en Vercel Blob privado
+```
+
+MongoDB conserva el pathname, tipo, tamaño, ETag y fecha de carga. Las respuestas de usuario solo exponen `has_profile_photo`. La lectura no acepta pathnames del cliente: FastAPI resuelve el pathname desde el usuario autenticado y transmite el blob con cabeceras privadas.
+
 El backend usa FastAPI con una arquitectura por capas y MongoDB como persistencia.
 
 ```text

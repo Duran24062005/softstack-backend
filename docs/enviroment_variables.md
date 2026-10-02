@@ -133,6 +133,17 @@ COOKIE_DOMAIN=
 
 El backend devuelve `Set-Cookie` y el Route Handler de Next.js reenvía esas cabeceras al navegador. Por eso, con esta arquitectura, las cookies deben pertenecer al dominio del frontend y normalmente no se configura `COOKIE_DOMAIN`.
 
+### Vercel Blob
+
+| Variable | Para qué sirve | Valor por defecto | Notas |
+| --- | --- | --- | --- |
+| `BLOB_STORE_ID` | Identificador del Blob Store conectado al backend. | Vacío | Debe corresponder al store privado de Vercel utilizado por SoftStack. |
+| `BLOB_READ_WRITE_TOKEN` | Credencial server-side para cargar, leer y eliminar fotos privadas. | Vacía | Es secreta. No debe enviarse al navegador, registrarse en logs ni incluirse en commits. |
+
+El backend exige ambas variables para habilitar el flujo de fotos de perfil. En Vercel deben configurarse como variables protegidas en los entornos que utilicen la feature. El store debe ser privado; el backend usa el SDK oficial de Python con `access="private"`.
+
+La implementación limita las fotos a JPEG, PNG y WebP de máximo 3 MB.
+
 ## Frontend
 
 El frontend usa estas variables en el servidor de Next.js. No llevan el prefijo `NEXT_PUBLIC_` porque no deben exponerse al navegador.

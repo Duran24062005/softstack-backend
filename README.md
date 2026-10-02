@@ -61,6 +61,7 @@ No guardes credenciales reales en el repositorio.
 - `POST /auth/forgot-password` y `POST /auth/reset-password` — solicitan y aplican códigos de recuperación.
 - `POST /auth/refresh` y `POST /auth/logout` — rotan o revocan la sesión.
 - `GET /auth/me` y `PATCH /auth/me` — consultan y editan el perfil.
+- `POST /auth/me/profile-photo`, `GET /auth/me/profile-photo` y `DELETE /auth/me/profile-photo` — gestionan la foto privada del usuario autenticado.
 - `GET /modules`, `GET /modules/{id}/lessons` y `GET /lessons/{id}` — contenido publicado.
 - `GET /admin/modules` — lista módulos en cualquier estado para administradores.
 - `GET /admin/modules/{id}` y `GET /admin/modules/{id}/lessons` — consulta un módulo y sus lecciones, incluidos borradores.
@@ -69,6 +70,8 @@ No guardes credenciales reales en el repositorio.
 - `GET /me/progress` y `POST /lessons/{id}/complete` — progreso del estudiante.
 
 Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos mediante `EMAIL_SERVICE_URL`, protegido por `EMAIL_SERVICE_API_KEY`; el servicio externo debe usar el mismo valor como `INTERNAL_API_KEY`.
+
+Las fotos de perfil usan un Blob Store privado de Vercel. Configura `BLOB_STORE_ID` y `BLOB_READ_WRITE_TOKEN` en el backend; nunca expongas el token al frontend. Se aceptan imágenes JPG, PNG y WebP de máximo 3 MB.
 
 ## Contenido inicial
 
