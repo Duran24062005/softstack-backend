@@ -70,6 +70,20 @@ CORS_ORIGINS=https://softstack-portal.vercel.app
 
 El frontend usa un proxy BFF de Next.js, por lo que muchas solicitudes del navegador salen al mismo dominio del frontend. Aun así, `CORS_ORIGINS` debe mantenerse correcto para cualquier consumo directo de la API.
 
+### Frontend y proveedor de correo
+
+| Variable | Para qué sirve | Valor por defecto | Notas |
+| --- | --- | --- | --- |
+| `FRONTEND_URL` | URL pública usada para construir enlaces de confirmación de cuenta. | `http://localhost:3000` | No se debe construir el enlace a partir del host recibido en la petición. En producción debe ser la URL pública del portal. |
+| `EMAIL_SERVICE_URL` | URL base de `Email_Python_FastAPI`. | `http://localhost:8001` | SoftStack llama a `POST /emails/transactional`. No debe terminar en una ruta específica del endpoint. |
+| `EMAIL_SERVICE_API_KEY` | Clave compartida para autenticar a SoftStack frente al proveedor de correo. | Vacía | Es secreta. Debe coincidir con `INTERNAL_API_KEY` en `Email_Python_FastAPI` y ser distinta por entorno. |
+| `EMAIL_REQUEST_TIMEOUT_SECONDS` | Tiempo máximo de espera del cliente hacia el proveedor. | `10` segundos | Se interpreta como entero. El registro no se revierte si el proveedor no responde; el reenvío permite reintentar. |
+| `EMAIL_VERIFICATION_EXPIRE_MINUTES` | Vigencia del enlace de confirmación. | `1440` minutos | Equivale a 24 horas. |
+| `PASSWORD_RESET_CODE_EXPIRE_MINUTES` | Vigencia del código de recuperación. | `10` minutos | Debe ser corto porque el código tiene seis dígitos. |
+| `PASSWORD_RESET_MAX_ATTEMPTS` | Intentos fallidos permitidos por código. | `5` | Al superar el límite, el código queda inutilizable. |
+
+El proveedor espera la misma clave bajo `INTERNAL_API_KEY`. En producción, ambas variables deben configurarse como secretos y nunca enviarse al navegador.
+
 ### JWT y sesiones
 
 | Variable | Para qué sirve | Valor por defecto | Notas |
@@ -158,7 +172,7 @@ En configuraciones históricas de Vercel se observaron nombres que no forman par
 | --- | --- |
 | `JWT_SECRET` | No la lee el código actual; la variable válida es `JWT_SECRET_KEY`. |
 | `CORS_ORIGIN` | No la lee el código actual; la variable válida es `CORS_ORIGINS`. |
-| `FRONTEND_URL` | No la lee el backend actual; el frontend usa `BACKEND_URL` para localizar la API. |
+| `FRONTEND_URL` | Ahora sí forma parte del contrato del backend: se usa para construir enlaces de verificación. No sustituye a `BACKEND_URL`, que es la variable del frontend para localizar la API. |
 | `JWT_EXPIRE` | No la lee el código actual; usa `ACCESS_TOKEN_EXPIRE_MINUTES` y `REFRESH_TOKEN_EXPIRE_DAYS`. |
 | `CLOUSTER2` | No tiene referencias en el repositorio; parece una variable antigua o un nombre escrito incorrectamente. |
 | `EMAIL_API_BASE_URL` | No tiene referencias en el repositorio actual. |

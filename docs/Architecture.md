@@ -10,7 +10,7 @@ HTTP -> API routes -> services -> repositories -> MongoDB
 
 El `MongoClient` se crea una vez durante el lifespan de FastAPI, se expone en `app.state` y se cierra al apagar la aplicación. Los repositorios reciben la base de datos mediante dependencias para facilitar pruebas aisladas.
 
-La autenticación se encuentra bajo `/auth`: registro, login, `/me` y el contrato inicial de reset de contraseña. Los access tokens JWT se validan con Bearer; los refresh tokens se almacenan en `refresh_tokens` únicamente como hashes.
+La autenticación se encuentra bajo `/auth`: registro, verificación de email, login, `/me`, recuperación de contraseña y logout. Los access tokens JWT se validan con Bearer; los refresh tokens se almacenan en `refresh_tokens` únicamente como hashes. Los enlaces y códigos temporales se guardan en `email_action_tokens` únicamente como hashes y se consumen una vez.
 
 ## Vertical implementada: sesión, aprendizaje y edición
 
@@ -18,7 +18,7 @@ La primera vertical funcional mantiene compatibilidad con Bearer, pero el client
 
 El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra de forma idempotente la finalización por usuario y lección. Los endpoints administrativos requieren `require_roles("admin")`; el frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
 
-El seed inicial se ejecuta explícitamente con `uv run python scripts/seed_content.py` y no se dispara durante el arranque de la API.
+El seed inicial se ejecuta explícitamente con `uv run python -m scripts.seed_content` y no se dispara durante el arranque de la API.
 
 ## Core y middlewares
 

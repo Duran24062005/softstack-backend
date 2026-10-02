@@ -14,11 +14,11 @@ SoftStack necesita pasar de una API de autenticación a una experiencia educativ
 - Seed inicial de contenido de empleabilidad.
 - Rutas administrativas protegidas por rol.
 
-Quedan fuera de esta vertical las evaluaciones, badges, subida de archivos, almacenamiento multimedia y verificación de email.
+Quedan fuera de esta vertical las evaluaciones, badges, subida de archivos y almacenamiento multimedia. La verificación de email y la recuperación de contraseña pertenecen al ciclo de cuenta documentado en [`003-email-account-lifecycle.md`](./003-email-account-lifecycle.md).
 
 ## Contratos y reglas
 
-- `POST /auth/register` y `POST /auth/login` crean cookies de access/refresh y nunca exponen tokens en JSON.
+- `POST /auth/register` crea la cuenta y solicita verificación de email; no crea sesión hasta que la cuenta se verifica. `POST /auth/login` crea cookies de access/refresh y nunca expone tokens en JSON.
 - `POST /auth/refresh` solo acepta el refresh token almacenado en cookie y lo rota.
 - `PATCH /auth/me` admite `full_name`, `email` y `new_password`; email o contraseña requieren `current_password`.
 - El email se normaliza a minúsculas y conserva índice único.

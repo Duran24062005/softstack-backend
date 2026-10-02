@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Implementar registro, login, consulta del usuario autenticado y el contrato inicial de recuperación de contraseña con JWT, refresh tokens persistidos como hashes y MongoDB.
+Implementar registro, login, consulta del usuario autenticado, verificación de email y recuperación de contraseña con JWT, refresh tokens persistidos como hashes y MongoDB.
 
 ## Roles
 
@@ -11,20 +11,23 @@ Implementar registro, login, consulta del usuario autenticado y el contrato inic
 
 ## Endpoints
 
-- `POST /auth/register` crea un usuario y devuelve su perfil público (`201`).
-- `POST /auth/login` valida credenciales y devuelve access token, refresh token y usuario (`200`).
+- `POST /auth/register` crea un usuario no verificado y devuelve su perfil público (`201`). También genera un enlace de verificación mediante el servicio de correo.
+- `POST /auth/login` valida credenciales y devuelve el usuario (`200`); las cookies HttpOnly contienen la sesión.
+- `GET /auth/verify-email?token=...` confirma la propiedad del email (`200`).
+- `POST /auth/resend-verification` reenvía el enlace con respuesta genérica (`202`).
+- `POST /auth/forgot-password` genera y envía un código de recuperación con respuesta genérica (`202`).
+- `POST /auth/reset-password` valida el código de seis dígitos, cambia la contraseña y revoca las sesiones activas (`200`).
 - `GET /auth/me` requiere `Authorization: Bearer <access_token>` (`200`).
-- `POST /auth/reset-password` valida el email y devuelve `501` hasta integrar tokens de recuperación y email.
 
-Las credenciales inválidas devuelven `401`, usuarios inactivos `403`, y emails duplicados `409`. Las respuestas no exponen contraseñas, hashes ni permiten enumerar cuentas.
+Las credenciales inválidas devuelven `401`, usuarios inactivos `403`, emails duplicados `409` y cuentas no verificadas `403`. Las respuestas de verificación y recuperación no permiten enumerar cuentas.
 
 ## Persistencia
 
-`users` almacena email normalizado, hash Argon2id, rol, estado y timestamps. `refresh_tokens` almacena únicamente el hash SHA-256 del token, usuario, expiración, creación y revocación. Se crean índices únicos, de estado y TTL sobre `expires_at`.
+`users` almacena email normalizado, hash Argon2id, estado `email_verified`, rol y timestamps. `refresh_tokens` almacena únicamente el hash SHA-256 del token, usuario, expiración, creación y revocación. `email_action_tokens` almacena hashes de enlaces/códigos, propósito, expiración, intentos y consumo. Se crean índices únicos y TTL sobre los tokens temporales.
 
 ## Seguridad
 
-Los access tokens son JWT de corta duración y contienen `sub`, `type=access`, `role`, `iat`, `exp` y `jti`. Los refresh tokens también son JWT, se devuelven en JSON como Bearer y se registran por hash para permitir revocación individual. `/auth/me` rechaza tokens de tipo refresh.
+Los access tokens son JWT de corta duración y contienen `sub`, `type=access`, `role`, `iat`, `exp` y `jti`. Los refresh tokens también son JWT, se entregan mediante cookies HttpOnly y se registran por hash para permitir revocación individual. `/auth/me` rechaza tokens de tipo refresh. Los enlaces y códigos de email solo se almacenan como hashes, tienen expiración y se consumen una vez.
 
 ## Capas
 
@@ -33,6 +36,8 @@ Los access tokens son JWT de corta duración y contienen `sub`, `type=access`, `
 - `repositories`: acceso a colecciones.
 - `services`: hash de contraseñas, tokens y reglas de autenticación.
 - `api`: rutas y dependencias de autorización.
+
+El ciclo de email y sus contratos con el servicio externo están detallados en [`003-email-account-lifecycle.md`](./003-email-account-lifecycle.md).
 
 
 ## Convenciones de implementación

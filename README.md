@@ -57,6 +57,8 @@ No guardes credenciales reales en el repositorio.
 - `GET /` — confirma que la API está funcionando.
 - `GET /health` — comprueba MongoDB; responde `200` si está disponible y `503` si no lo está.
 - `POST /auth/register` y `POST /auth/login` — crean sesión mediante cookies HttpOnly.
+- `GET /auth/verify-email`, `POST /auth/resend-verification` — verifican o reenvían la confirmación de cuenta.
+- `POST /auth/forgot-password` y `POST /auth/reset-password` — solicitan y aplican códigos de recuperación.
 - `POST /auth/refresh` y `POST /auth/logout` — rotan o revocan la sesión.
 - `GET /auth/me` y `PATCH /auth/me` — consultan y editan el perfil.
 - `GET /modules`, `GET /modules/{id}/lessons` y `GET /lessons/{id}` — contenido publicado.
@@ -66,7 +68,7 @@ No guardes credenciales reales en el repositorio.
 - `POST /admin/modules/{id}/lessons`, `GET /admin/lessons/{id}` y `PATCH /admin/lessons/{id}` — gestión de lecciones para administradores.
 - `GET /me/progress` y `POST /lessons/{id}/complete` — progreso del estudiante.
 
-Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend.
+Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos mediante `EMAIL_SERVICE_URL`, protegido por `EMAIL_SERVICE_API_KEY`; el servicio externo debe usar el mismo valor como `INTERNAL_API_KEY`.
 
 ## Contenido inicial
 
