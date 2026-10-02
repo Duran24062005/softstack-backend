@@ -6,7 +6,7 @@ from typing import Any
 from vercel.blob import AsyncBlobClient, BlobNotFoundError, list_objects_async
 
 from app.config.config import blob_config
-from app.core.exception import BlobStorageOperationError, BlobStorageUnavailableError
+from app.core.exception import BlobStorageOperationError, BlobStorageUnavailableError, ContentMediaUnavailableError
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,8 @@ class VercelBlobStorage:
             self.client = client
             return
         if not self.config["STORE_ID"] or not self.config["READ_WRITE_TOKEN"]:
+            if self.config.get("ACCESS") == "public":
+                raise ContentMediaUnavailableError
             raise BlobStorageUnavailableError
         self.client = AsyncBlobClient(token=self.config["READ_WRITE_TOKEN"])
 
