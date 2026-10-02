@@ -2,7 +2,7 @@
 
 ## Problema y objetivo
 
-SoftStack actualmente registra usuarios y permite iniciar sesión sin comprobar la propiedad del email. Además, `POST /auth/reset-password` todavía responde `501`. Esta vertical agrega confirmación de cuenta y recuperación de contraseña mediante un código de un solo uso, usando `Email_Python_FastAPI` como proveedor transaccional de correo.
+SoftStack actualmente registra usuarios y permite iniciar sesión sin comprobar la propiedad del email. Además, `POST /auth/reset-password` todavía responde `501`. Esta vertical agrega confirmación de cuenta y recuperación de contraseña mediante un código de un solo uso, usando un proveedor transaccional de correo desplegado externamente.
 
 El objetivo es que:
 
@@ -24,7 +24,7 @@ El objetivo es que:
 - `POST /auth/reset-password` para validar el código y cambiar la contraseña.
 - Colección `email_action_tokens` para hashes de tokens/códigos, expiración, consumo e intentos.
 - Revocación de refresh tokens después de cambiar la contraseña.
-- Cliente HTTP interno hacia el endpoint transaccional de `Email_Python_FastAPI`.
+- Cliente HTTP hacia el endpoint transaccional del proveedor externo.
 - Pantallas frontend para confirmar email, solicitar recuperación y establecer nueva contraseña.
 - Plantillas HTML/texto para confirmación y recuperación.
 - Variables de entorno, pruebas y documentación de contratos.
@@ -32,7 +32,7 @@ El objetivo es que:
 ### Fuera de alcance
 
 - Cambiar el proveedor SMTP o administrar buzones desde SoftStack.
-- Usar la tabla de usuarios de `Email_Python_FastAPI` para autenticar usuarios de SoftStack.
+- Usar la base de datos del proveedor de correo para autenticar usuarios de SoftStack.
 - Recuperación mediante preguntas de seguridad.
 - Verificación automática de dominios, MX o listas de correo desechable.
 - Rate limiting distribuido por IP; se limita el número de intentos por token y se deja documentada la necesidad de rate limiting de borde.
@@ -42,7 +42,7 @@ El objetivo es que:
 - Usuario no confirmado: puede registrarse y solicitar reenvío, pero no iniciar sesión.
 - Usuario confirmado: puede iniciar recuperación y cambiar su contraseña con un código válido.
 - Servicio SoftStack: crea, consume y revoca tokens; mantiene la identidad y las reglas de autenticación.
-- `Email_Python_FastAPI`: recibe un mensaje transaccional autenticado y lo entrega mediante SMTP o mock de desarrollo.
+- Proveedor externo: recibe un mensaje transaccional autenticado y lo entrega mediante su infraestructura de correo.
 
 ## Flujo de confirmación
 
@@ -160,7 +160,7 @@ No se persisten tokens de confirmación ni códigos en texto plano.
 
 ## Integración de correo
 
-SoftStack llama a `POST /emails/transactional` de `Email_Python_FastAPI` con:
+SoftStack llama a `POST /emails/transactional` del proveedor externo (`https://email-python-fast-api.vercel.app`) con:
 
 - `recipient`;
 - `subject`;

@@ -53,7 +53,7 @@ security_config = {
 }
 
 email_config = {
-    "SERVICE_URL": os.getenv("EMAIL_SERVICE_URL", "http://localhost:8001").rstrip("/"),
+    "SERVICE_URL": os.getenv("EMAIL_SERVICE_URL", "https://email-python-fast-api.vercel.app").rstrip("/"),
     "SERVICE_API_KEY": os.getenv("EMAIL_SERVICE_API_KEY", ""),
     "REQUEST_TIMEOUT_SECONDS": _env_int("EMAIL_REQUEST_TIMEOUT_SECONDS", 10),
     "FRONTEND_URL": os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/"),

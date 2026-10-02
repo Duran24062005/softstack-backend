@@ -75,8 +75,8 @@ El frontend usa un proxy BFF de Next.js, por lo que muchas solicitudes del naveg
 | Variable | Para qué sirve | Valor por defecto | Notas |
 | --- | --- | --- | --- |
 | `FRONTEND_URL` | URL pública usada para construir enlaces de confirmación de cuenta. | `http://localhost:3000` | No se debe construir el enlace a partir del host recibido en la petición. En producción debe ser la URL pública del portal. |
-| `EMAIL_SERVICE_URL` | URL base de `Email_Python_FastAPI`. | `http://localhost:8001` | SoftStack llama a `POST /emails/transactional`. No debe terminar en una ruta específica del endpoint. |
-| `EMAIL_SERVICE_API_KEY` | Clave compartida para autenticar a SoftStack frente al proveedor de correo. | Vacía | Es secreta. Debe coincidir con `INTERNAL_API_KEY` en `Email_Python_FastAPI` y ser distinta por entorno. |
+| `EMAIL_SERVICE_URL` | URL base del proveedor externo de correo transaccional. | `https://email-python-fast-api.vercel.app` | SoftStack llama a `POST /emails/transactional`. No debe terminar en una ruta específica del endpoint. |
+| `EMAIL_SERVICE_API_KEY` | Clave compartida para autenticar a SoftStack frente al proveedor de correo. | Vacía | Es secreta y debe coincidir con la clave configurada en el proveedor desplegado; usa una distinta por entorno. |
 | `EMAIL_REQUEST_TIMEOUT_SECONDS` | Tiempo máximo de espera del cliente hacia el proveedor. | `10` segundos | Se interpreta como entero. El registro no se revierte si el proveedor no responde; el reenvío permite reintentar. |
 | `EMAIL_VERIFICATION_EXPIRE_MINUTES` | Vigencia del enlace de confirmación. | `1440` minutos | Equivale a 24 horas. |
 | `PASSWORD_RESET_CODE_EXPIRE_MINUTES` | Vigencia del código de recuperación. | `10` minutos | Debe ser corto porque el código tiene seis dígitos. |
