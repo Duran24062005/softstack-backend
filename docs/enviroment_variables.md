@@ -144,6 +144,23 @@ El backend exige ambas variables para habilitar el flujo de fotos de perfil. En 
 
 La implementación limita las fotos a JPEG, PNG y WebP de máximo 3 MB.
 
+### Vercel Blob público para contenido
+
+El contenido educativo usa un store público separado del store privado de fotos de perfil. El modo público permite que el navegador del estudiante lea directamente las imágenes y videos mediante la URL persistida en MongoDB.
+
+| Variable | Para qué sirve | Valor por defecto | Notas |
+| --- | --- | --- | --- |
+| `CONTENT_BLOB_STORE_ID` | Identificador del store público de contenido. | Vacío | Crea el store con acceso `public`; no reutilices el store privado de perfiles. |
+| `CONTENT_BLOB_READ_WRITE_TOKEN` | Token server-side para importación, eliminación y limpieza. | Vacío | También se configura como secreto en el frontend para el Route Handler BFF; nunca se expone al navegador. |
+| `CONTENT_BLOB_PUBLIC_HOST` | Host exacto del store público. | Obligatorio para referencias persistidas | Debe coincidir con el host de la URL pública del store; el backend rechaza referencias si falta o no coincide. |
+| `CONTENT_BLOB_MAX_IMAGE_SIZE_BYTES` | Tamaño máximo de imágenes. | `10000000` | Equivale a 10 MB. |
+| `CONTENT_BLOB_MAX_VIDEO_SIZE_BYTES` | Tamaño máximo de videos. | `100000000` | Equivale a 100 MB. |
+| `CONTENT_BLOB_IMPORT_TIMEOUT_SECONDS` | Timeout al importar una URL externa. | `10` | Se rechazan destinos locales y redes privadas. |
+| `CONTENT_BLOB_ORPHAN_RETENTION_HOURS` | Retención de blobs sin referencia. | `24` | La limpieza se ejecuta mediante Vercel Cron. |
+| `CRON_SECRET` | Protege el endpoint interno de limpieza. | Vacío | Debe ser un secreto largo y distinto por entorno. |
+
+Formatos de contenido: JPEG, PNG, WebP y AVIF para imágenes; MP4, WebM y MOV para videos.
+
 ## Frontend
 
 El frontend usa estas variables en el servidor de Next.js. No llevan el prefijo `NEXT_PUBLIC_` porque no deben exponerse al navegador.

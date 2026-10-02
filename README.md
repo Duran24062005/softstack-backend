@@ -16,6 +16,14 @@ uv sync
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Ejecuta las pruebas unitarias con:
+
+```bash
+uv run pytest
+```
+
+Las pruebas de servicios de contenido cubren medios anidados, límites, SSRF, portadas, compensación y limpieza de blobs.
+
 Puedes usar MongoDB local o configurar MongoDB Atlas en `MONGODB_URI`.
 
 ### Variables de autenticación
@@ -67,11 +75,17 @@ No guardes credenciales reales en el repositorio.
 - `GET /admin/modules/{id}` y `GET /admin/modules/{id}/lessons` — consulta un módulo y sus lecciones, incluidos borradores.
 - `POST /admin/modules` y `PATCH /admin/modules/{id}` — crea y actualiza módulos.
 - `POST /admin/modules/{id}/lessons`, `GET /admin/lessons/{id}` y `PATCH /admin/lessons/{id}` — gestión de lecciones para administradores.
+- `POST /admin/content-media/import` y `DELETE /admin/content-media` — importación segura y limpieza de medios para administradores.
+- `GET /internal/content-media/cleanup` — limpieza protegida de blobs de contenido huérfanos; Vercel Cron lo ejecuta diariamente.
 - `GET /me/progress` y `POST /lessons/{id}/complete` — progreso del estudiante.
 
 Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos mediante `EMAIL_SERVICE_URL`, protegido por `EMAIL_SERVICE_API_KEY`; el servicio externo debe usar el mismo valor como `INTERNAL_API_KEY`.
 
 Las fotos de perfil usan un Blob Store privado de Vercel. Configura `BLOB_STORE_ID` y `BLOB_READ_WRITE_TOKEN` en el backend; nunca expongas el token al frontend. Se aceptan imágenes JPG, PNG y WebP de máximo 3 MB.
+
+Las imágenes, videos y portadas de módulos usan un Blob Store público separado. Configura `CONTENT_BLOB_STORE_ID`, `CONTENT_BLOB_READ_WRITE_TOKEN` y `CONTENT_BLOB_PUBLIC_HOST`. El contenido público puede ser leído por cualquiera que conozca su URL. Los límites predeterminados son 10 MB para imágenes y 100 MB para videos.
+
+Para habilitarlo en Vercel, crea un Blob Store dedicado con acceso público, copia su store ID y token read-write en las variables anteriores y configura el mismo token en el entorno server-side del frontend. El endpoint de eliminación rechaza pathnames todavía referenciados; los archivos abandonados se recuperan mediante el cron diario. Para convertir contenido externo existente antes de aplicar la validación estricta, ejecuta primero `uv run python -m scripts.migrate_content_media` en modo dry-run y luego añade `--apply`.
 
 ## Contenido inicial
 

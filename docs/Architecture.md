@@ -1,5 +1,29 @@
 # Arquitectura del backend
 
+## Flujo real de medios de contenido
+
+El CMS carga imágenes, videos y portadas de módulos mediante el Route Handler BFF de Next.js. El handler comprueba la sesión administrativa y genera un token limitado para el Blob Store público de contenido. El editor conserva la URL y metadatos en el JSON Tiptap; FastAPI valida nuevamente el contrato y persiste `media_assets` junto con el documento en MongoDB.
+
+```text
+Administrador
+    │ cookie HttpOnly
+    ▼
+Next.js /api/content-media/upload
+    │ token de carga server-side
+    ▼
+Vercel Blob público (content-media/)
+    │ url + pathname + MIME + tamaño
+    ▼
+Editor Tiptap / portada de módulo
+    ▼
+FastAPI admin content endpoint
+    ├── valida referencias y nodos anidados
+    ├── persiste URL en MongoDB
+    └── elimina blobs retirados o huérfanos
+```
+
+Los documentos `lessons` mantienen las URLs en `content.*.attrs.src` y un array interno `media_assets`. Los documentos `modules` mantienen `cover_media` y `media_assets`. El store público permite lectura directa; las fotos de perfil continúan usando el store privado y sus endpoints autenticados.
+
 ## Flujo real de fotos de perfil
 
 La foto de perfil sigue este flujo:
