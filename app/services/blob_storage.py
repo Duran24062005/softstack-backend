@@ -44,7 +44,9 @@ class VercelBlobStorage:
             pathname=result.pathname,
             content_type=result.content_type,
             size=len(body),
-            etag=result.etag,
+            # PutBlobResult from the Python SDK does not expose an ETag.
+            # Keep the metadata field stable for the application contract.
+            etag=getattr(result, "etag", ""),
             url=result.url,
         )
 
