@@ -18,6 +18,23 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Puedes usar MongoDB local o configurar MongoDB Atlas en `MONGODB_URI`.
 
+### Variables de autenticación
+
+- `ADMIN_EMAILS` es una lista separada por comas. Cada usuario cuyo email normalizado aparezca allí recibe el rol `admin` al registrarse. Cambiar la variable no cambia el rol de usuarios ya existentes.
+- `COOKIE_DOMAIN` debe permanecer vacío cuando el frontend usa el proxy BFF de Next.js, como en este proyecto. No debe apuntar al dominio del backend para intentar compartir cookies con el frontend; el navegador recibe las cookies desde el dominio del frontend.
+- En local usa `COOKIE_SECURE=false` y `COOKIE_SAMESITE=lax`. En producción con HTTPS, `COOKIE_SECURE=true` es la opción recomendada.
+
+Ejemplo mínimo local:
+
+```env
+ADMIN_EMAILS=tu-correo@example.com
+COOKIE_SECURE=false
+COOKIE_SAMESITE=lax
+COOKIE_DOMAIN=
+```
+
+El email de `ADMIN_EMAILS` debe coincidir con el que usarás en el registro. Si el usuario ya existe como `user`, la variable no lo convierte automáticamente en administrador.
+
 ## Docker Compose
 
 ```bash
