@@ -14,7 +14,7 @@ from app.services.blob_storage import StoredBlob
 class RouteStorage:
     def __init__(self):
         self.deleted = []
-        self.result = SimpleNamespace(stream=[b"private-image"])
+        self.result = SimpleNamespace(content=b"private-image")
 
     async def upload(self, pathname, body, content_type):
         return StoredBlob(pathname, content_type, len(body), '"etag"', "private-url")

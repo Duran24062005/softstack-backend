@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 
 from app.controllers.auth_controller import (
     current_user_controller,
@@ -122,8 +122,8 @@ async def get_profile_photo(
     storage: VercelBlobStorage = Depends(get_blob_storage),
 ):
     result, photo = await ProfilePhotoService(None, storage).get(user)
-    return StreamingResponse(
-        result.stream,
+    return Response(
+        content=result.content,
         media_type=photo["content_type"],
         headers={
             "Cache-Control": "private, no-store",
