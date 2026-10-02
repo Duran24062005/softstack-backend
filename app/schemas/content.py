@@ -4,6 +4,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from app.models.content import ContentStatus
+from app.schemas.content_media import MediaReference
 
 
 class TiptapDocumentRequest(BaseModel):
@@ -16,6 +17,7 @@ class ModuleCreateRequest(BaseModel):
     description: str = Field(default="", max_length=500)
     order: int = Field(default=0, ge=0)
     status: ContentStatus = ContentStatus.DRAFT
+    cover_media: MediaReference | None = None
 
 
 class ModuleUpdateRequest(BaseModel):
@@ -23,6 +25,7 @@ class ModuleUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=500)
     order: int | None = Field(default=None, ge=0)
     status: ContentStatus | None = None
+    cover_media: MediaReference | None = None
 
 
 class ModuleResponse(BaseModel):
@@ -32,6 +35,7 @@ class ModuleResponse(BaseModel):
     description: str
     order: int
     status: ContentStatus
+    cover_media: MediaReference | None = None
     created_at: datetime
     updated_at: datetime
 

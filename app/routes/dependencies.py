@@ -8,6 +8,7 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.email_action_token_repository import EmailActionTokenRepository
 from app.services.account_email_service import AccountEmailService
 from app.services.email_service import TransactionalEmailClient
+from app.config.config import content_blob_config
 from app.services.blob_storage import VercelBlobStorage
 
 
@@ -33,6 +34,10 @@ def get_account_email_service(
 
 def get_blob_storage() -> VercelBlobStorage:
     return VercelBlobStorage()
+
+
+def get_content_blob_storage() -> VercelBlobStorage:
+    return VercelBlobStorage(config=content_blob_config)
 
 
 def current_user(request: Request, users: UserRepository = Depends(get_user_repository)):

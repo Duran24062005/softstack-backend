@@ -67,6 +67,21 @@ class BlobStorageOperationError(ApplicationError):
     detail = "Could not process profile photo storage"
 
 
+class ContentMediaInvalidError(ApplicationError):
+    status_code = 400
+    detail = "Invalid content media"
+
+
+class ContentMediaUnavailableError(ApplicationError):
+    status_code = 503
+    detail = "Content media storage is unavailable"
+
+
+class ContentMediaOperationError(ApplicationError):
+    status_code = 502
+    detail = "Could not process content media storage"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApplicationError)
     async def application_error_handler(_: Request, error: ApplicationError) -> JSONResponse:

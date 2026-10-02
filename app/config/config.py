@@ -77,3 +77,32 @@ blob_config = {
     "MAX_FILE_SIZE_BYTES": 3_000_000,
     "ALLOWED_CONTENT_TYPES": {"image/jpeg", "image/png", "image/webp"},
 }
+
+
+content_blob_config = {
+    "STORE_ID": os.getenv("CONTENT_BLOB_STORE_ID", ""),
+    "READ_WRITE_TOKEN": os.getenv("CONTENT_BLOB_READ_WRITE_TOKEN", ""),
+    "ACCESS": "public",
+    "PREFIX": "content-media/",
+    "PUBLIC_HOST": os.getenv("CONTENT_BLOB_PUBLIC_HOST", ""),
+    "MAX_IMAGE_SIZE_BYTES": _env_int("CONTENT_BLOB_MAX_IMAGE_SIZE_BYTES", 10_000_000),
+    "MAX_VIDEO_SIZE_BYTES": _env_int("CONTENT_BLOB_MAX_VIDEO_SIZE_BYTES", 100_000_000),
+    "ALLOWED_IMAGE_CONTENT_TYPES": {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/avif",
+    },
+    "ALLOWED_VIDEO_CONTENT_TYPES": {
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+    },
+    "IMPORT_TIMEOUT_SECONDS": _env_int("CONTENT_BLOB_IMPORT_TIMEOUT_SECONDS", 10),
+    "ORPHAN_RETENTION_HOURS": _env_int("CONTENT_BLOB_ORPHAN_RETENTION_HOURS", 24),
+}
+
+
+cron_config = {
+    "SECRET": os.getenv("CRON_SECRET", ""),
+}

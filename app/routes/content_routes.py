@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, status
 
 from app.middlewares.role_middleware import require_roles
 from app.repositories.content_repository import LessonRepository, ModuleRepository, ProgressRepository
-from app.routes.content_dependencies import get_lesson_repository, get_module_repository, get_progress_repository
-from app.routes.dependencies import current_user
+from app.routes.content_dependencies import get_content_media_repository, get_lesson_repository, get_module_repository, get_progress_repository
+from app.routes.dependencies import current_user, get_content_blob_storage
 from app.schemas.content import (LessonCreateRequest, LessonResponse, LessonUpdateRequest, ModuleCreateRequest, ModuleResponse, ModuleUpdateRequest, ProgressSummaryResponse)
 from app.services.content_service import (complete_lesson, create_lesson, create_module, get_admin_module, get_lesson, get_module, get_progress, list_admin_module_lessons, list_admin_modules, list_module_lessons, list_modules, update_lesson, update_module)
+from app.services.blob_storage import VercelBlobStorage
 
 router = APIRouter(tags=["learning"])
 admin = require_roles("admin")
@@ -47,23 +48,23 @@ def lesson(lesson_id: str, repository: LessonRepository = Depends(get_lesson_rep
 
 
 @router.post("/admin/modules", response_model=ModuleResponse, status_code=status.HTTP_201_CREATED)
-def create_admin_module(payload: ModuleCreateRequest, user=Depends(admin), repository: ModuleRepository = Depends(get_module_repository)):
-    return create_module(repository, payload, user)
+async def create_admin_module(payload: ModuleCreateRequest, user=Depends(admin), repository: ModuleRepository = Depends(get_module_repository), media_repository=Depends(get_content_media_repository), storage: VercelBlobStorage = Depends(get_content_blob_storage)):
+    return await create_module(repository, media_repository, storage, payload, user)
 
 
 @router.patch("/admin/modules/{module_id}", response_model=ModuleResponse)
-def update_admin_module(module_id: str, payload: ModuleUpdateRequest, _: dict = Depends(admin), repository: ModuleRepository = Depends(get_module_repository)):
-    return update_module(repository, module_id, payload)
+async def update_admin_module(module_id: str, payload: ModuleUpdateRequest, _: dict = Depends(admin), repository: ModuleRepository = Depends(get_module_repository), media_repository=Depends(get_content_media_repository), storage: VercelBlobStorage = Depends(get_content_blob_storage)):
+    return await update_module(repository, media_repository, storage, module_id, payload)
 
 
 @router.post("/admin/modules/{module_id}/lessons", response_model=LessonResponse, status_code=status.HTTP_201_CREATED)
-def create_admin_lesson(module_id: str, payload: LessonCreateRequest, user=Depends(admin), modules_repository: ModuleRepository = Depends(get_module_repository), lessons_repository: LessonRepository = Depends(get_lesson_repository)):
-    return create_lesson(modules_repository, lessons_repository, module_id, payload, user)
+async def create_admin_lesson(module_id: str, payload: LessonCreateRequest, user=Depends(admin), modules_repository: ModuleRepository = Depends(get_module_repository), lessons_repository: LessonRepository = Depends(get_lesson_repository), media_repository=Depends(get_content_media_repository), storage: VercelBlobStorage = Depends(get_content_blob_storage)):
+    return await create_lesson(modules_repository, lessons_repository, media_repository, storage, module_id, payload, user)
 
 
 @router.patch("/admin/lessons/{lesson_id}", response_model=LessonResponse)
-def update_admin_lesson(lesson_id: str, payload: LessonUpdateRequest, user=Depends(admin), repository: LessonRepository = Depends(get_lesson_repository)):
-    return update_lesson(repository, lesson_id, payload, user)
+async def update_admin_lesson(lesson_id: str, payload: LessonUpdateRequest, user=Depends(admin), repository: LessonRepository = Depends(get_lesson_repository), media_repository=Depends(get_content_media_repository), storage: VercelBlobStorage = Depends(get_content_blob_storage)):
+    return await update_lesson(repository, media_repository, storage, lesson_id, payload, user)
 
 
 @router.get("/admin/lessons/{lesson_id}", response_model=LessonResponse)

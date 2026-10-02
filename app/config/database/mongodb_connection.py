@@ -32,7 +32,9 @@ def initialize_indexes(database: Database) -> None:
         ("consumed_at", ASCENDING),
     ])
     database.modules.create_index("slug", unique=True)
+    database.modules.create_index("media_assets.pathname")
     database.lessons.create_index([("module_id", ASCENDING), ("slug", ASCENDING)], unique=True)
+    database.lessons.create_index("media_assets.pathname")
     database.progress.create_index([("user_id", ASCENDING), ("lesson_id", ASCENDING)], unique=True)
     database.progress.create_index([("user_id", ASCENDING), ("completed_at", ASCENDING)])
 

@@ -5,6 +5,8 @@ from typing import Any
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.content_media import MediaReference
+
 
 class ContentStatus(str, Enum):
     DRAFT = "draft"
@@ -25,6 +27,8 @@ class LearningModule(BaseModel):
     description: str
     order: int = 0
     status: ContentStatus = ContentStatus.DRAFT
+    cover_media: MediaReference | None = None
+    media_assets: list[MediaReference] = Field(default_factory=list)
     created_by: ObjectId
     created_at: datetime
     updated_at: datetime
@@ -38,6 +42,7 @@ class Lesson(BaseModel):
     slug: str
     description: str
     content: TiptapDocument = Field(default_factory=TiptapDocument)
+    media_assets: list[MediaReference] = Field(default_factory=list)
     order: int = 0
     status: ContentStatus = ContentStatus.DRAFT
     estimated_minutes: int = 10
@@ -55,6 +60,7 @@ def public_module(document: dict[str, Any]) -> dict[str, Any]:
         "description": document.get("description", ""),
         "order": document.get("order", 0),
         "status": document.get("status", ContentStatus.DRAFT.value),
+        "cover_media": document.get("cover_media"),
         "created_at": document["created_at"],
         "updated_at": document["updated_at"],
     }
