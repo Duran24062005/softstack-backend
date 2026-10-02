@@ -6,6 +6,7 @@ import pytest
 
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
+from app.core.exception import EmailNotVerifiedError
 from app.services.auth_service import AuthenticationError, authenticate, register_user, update_profile
 from app.core.security import decode_access_token, hash_token
 
@@ -48,6 +49,26 @@ def test_login_rejects_invalid_credentials():
 
     with pytest.raises(AuthenticationError):
         authenticate(users, refresh_tokens, "missing@example.com", "wrong-password")
+
+    refresh_tokens.create.assert_not_called()
+
+
+def test_login_rejects_unverified_email():
+    users = Mock(spec=UserRepository)
+    refresh_tokens = Mock(spec=RefreshTokenRepository)
+    users.find_by_email.return_value = {
+        "_id": "user-1",
+        "email": "person@example.com",
+        "password_hash": "",
+        "role": "user",
+        "is_active": True,
+        "email_verified": False,
+    }
+    from app.core.security import hash_password
+    users.find_by_email.return_value["password_hash"] = hash_password("strong-password")
+
+    with pytest.raises(EmailNotVerifiedError):
+        authenticate(users, refresh_tokens, "person@example.com", "strong-password")
 
     refresh_tokens.create.assert_not_called()
 

@@ -16,6 +16,12 @@ class LoginRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern=r"^[0-9]{6}$")
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class EmailRequest(BaseModel):
+    email: EmailStr
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -40,9 +46,12 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: UserRole
     is_active: bool
+    email_verified: bool
     created_at: datetime
 
 
 class AuthResponse(BaseModel):
-    expires_in: int
+    expires_in: int = 0
     user: UserResponse
+    verification_required: bool = False
+    message: str | None = None

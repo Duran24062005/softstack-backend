@@ -26,3 +26,6 @@ class UserRepository:
         changes = {**changes, "updated_at": datetime.now(timezone.utc)}
         self.collection.update_one({"_id": user_id}, {"$set": changes})
         return self.find_by_id(user_id)
+
+    def mark_email_verified(self, user_id: Any) -> dict[str, Any] | None:
+        return self.update(user_id, {"email_verified": True})

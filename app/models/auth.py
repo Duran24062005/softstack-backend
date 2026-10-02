@@ -19,6 +19,7 @@ class User(BaseModel):
     password_hash: str
     role: UserRole = UserRole.USER
     is_active: bool = True
+    email_verified: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -41,5 +42,6 @@ def public_user(document: dict[str, Any]) -> dict[str, Any]:
         "email": email,
         "role": document["role"],
         "is_active": document["is_active"],
+        "email_verified": document.get("email_verified", True),
         "created_at": document["created_at"],
     }

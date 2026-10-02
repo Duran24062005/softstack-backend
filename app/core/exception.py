@@ -37,6 +37,16 @@ class InactiveUserError(ApplicationError):
     detail = "User is inactive or unavailable"
 
 
+class EmailNotVerifiedError(ApplicationError):
+    status_code = 403
+    detail = "Email address must be verified before signing in"
+
+
+class InvalidEmailActionTokenError(ApplicationError):
+    status_code = 400
+    detail = "Invalid or expired email action token"
+
+
 class NotImplementedApplicationError(ApplicationError):
     status_code = 501
     detail = "Feature is not implemented yet"

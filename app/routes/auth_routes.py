@@ -5,7 +5,6 @@ from app.controllers.auth_controller import (
     login_controller,
     refresh_controller,
     register_user_controller,
-    reset_password_controller,
     update_profile_controller,
 )
 from app.config.config import cookie_config
@@ -13,18 +12,29 @@ from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.core.exception import InvalidTokenError
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
-from app.routes.dependencies import current_user, get_refresh_token_repository, get_user_repository
-from app.schemas.auth import AuthResponse, LoginRequest, ProfileUpdateRequest, RegisterRequest, ResetPasswordRequest, UserResponse
+from app.routes.dependencies import current_user, get_account_email_service, get_refresh_token_repository, get_user_repository
+from app.schemas.auth import AuthResponse, EmailRequest, LoginRequest, ProfileUpdateRequest, RegisterRequest, ResetPasswordRequest, UserResponse
+from app.services.account_email_service import AccountEmailService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, response: Response, users: UserRepository = Depends(get_user_repository), refresh_tokens: RefreshTokenRepository = Depends(get_refresh_token_repository)):
-    register_user_controller(users, payload.email, payload.password, payload.full_name)
-    session = login_controller(users, refresh_tokens, payload.email, payload.password)
-    set_auth_cookies(response, session["access_token"], session["refresh_token"])
-    return {"expires_in": session["expires_in"], "user": session["user"]}
+async def register(
+    payload: RegisterRequest,
+    users: UserRepository = Depends(get_user_repository),
+    account_email: AccountEmailService = Depends(get_account_email_service),
+):
+    registered = register_user_controller(users, payload.email, payload.password, payload.full_name)
+    user = users.find_by_email(str(payload.email).lower())
+    if user:
+        await account_email.send_verification(user)
+    return {
+        "expires_in": 0,
+        "user": registered,
+        "verification_required": True,
+        "message": "Revisa tu correo para confirmar tu cuenta.",
+    }
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -59,6 +69,30 @@ def logout(request: Request, response: Response, refresh_tokens: RefreshTokenRep
     return None
 
 
+@router.get("/verify-email")
+def verify_email(token: str, account_email: AccountEmailService = Depends(get_account_email_service)):
+    account_email.verify_email(token)
+    return {"message": "Email verificado correctamente."}
+
+
+@router.post("/resend-verification", status_code=status.HTTP_202_ACCEPTED)
+async def resend_verification(payload: EmailRequest, account_email: AccountEmailService = Depends(get_account_email_service)):
+    await account_email.resend_verification(str(payload.email))
+    return {"message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace."}
+
+
+@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
+async def forgot_password(payload: EmailRequest, account_email: AccountEmailService = Depends(get_account_email_service)):
+    await account_email.request_password_reset(str(payload.email))
+    return {"message": "Si la cuenta existe, enviaremos un código de recuperación."}
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, account_email: AccountEmailService = Depends(get_account_email_service)):
+    account_email.reset_password(str(payload.email), payload.code, payload.new_password)
+    return {"message": "Contraseña actualizada correctamente."}
+
+
 @router.get("/me", response_model=UserResponse)
 def me(user=Depends(current_user)):
     return current_user_controller(user)
@@ -67,8 +101,3 @@ def me(user=Depends(current_user)):
 @router.patch("/me", response_model=UserResponse)
 def update_me(payload: ProfileUpdateRequest, user=Depends(current_user), users: UserRepository = Depends(get_user_repository)):
     return update_profile_controller(users, user, payload)
-
-
-@router.post("/reset-password", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def reset_password(_: ResetPasswordRequest):
-    return reset_password_controller()

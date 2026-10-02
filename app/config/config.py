@@ -52,6 +52,16 @@ security_config = {
     "ADMIN_EMAILS": _parse_csv("ADMIN_EMAILS"),
 }
 
+email_config = {
+    "SERVICE_URL": os.getenv("EMAIL_SERVICE_URL", "http://localhost:8001").rstrip("/"),
+    "SERVICE_API_KEY": os.getenv("EMAIL_SERVICE_API_KEY", ""),
+    "REQUEST_TIMEOUT_SECONDS": _env_int("EMAIL_REQUEST_TIMEOUT_SECONDS", 10),
+    "FRONTEND_URL": os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/"),
+    "VERIFICATION_EXPIRE_MINUTES": _env_int("EMAIL_VERIFICATION_EXPIRE_MINUTES", 1_440),
+    "RESET_CODE_EXPIRE_MINUTES": _env_int("PASSWORD_RESET_CODE_EXPIRE_MINUTES", 10),
+    "RESET_MAX_ATTEMPTS": _env_int("PASSWORD_RESET_MAX_ATTEMPTS", 5),
+}
+
 cookie_config = {
     "ACCESS_COOKIE_NAME": os.getenv("ACCESS_COOKIE_NAME", "softstack_access"),
     "REFRESH_COOKIE_NAME": os.getenv("REFRESH_COOKIE_NAME", "softstack_refresh"),
