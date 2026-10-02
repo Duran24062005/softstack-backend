@@ -73,10 +73,12 @@ Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend vive
 Con MongoDB disponible, carga los módulos y lecciones iniciales con:
 
 ```bash
-uv run python scripts/seed_content.py
+uv run python -m scripts.seed_content
 ```
 
 El seed es idempotente: puede repetirse sin duplicar módulos ni lecciones.
+
+El catálogo inicial contiene cinco módulos y trece lecciones sobre presencia virtual, CV y filtros ATS, marca personal y mercado oculto, comunicación en entrevistas, y negociación y seguimiento. La estructura detallada está documentada en [`prds/002-learning-foundation.md`](./prds/002-learning-foundation.md).
 
 ## Despliegue
 
