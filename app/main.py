@@ -35,6 +35,7 @@ app = FastAPI(
     description=app_config["DESCRIPTION"],
     version=app_config["VERSION"], 
     lifespan=lifespan,
+    docs_url="/"
 )
 register_exception_handlers(app)
 add_cors_middleware(app)
@@ -44,7 +45,7 @@ app.include_router(content_router)
 app.include_router(content_media_router)
 
 
-@app.get("/")
+@app.get("/root")
 def read_root() -> dict[str, str]:
     return {"message": "¡Servidor FastAPI funcionando!"}
 
