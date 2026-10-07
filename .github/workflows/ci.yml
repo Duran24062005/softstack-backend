@@ -40,3 +40,9 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -q
+
+      - name: Check assessment and trainer coverage
+        run: uv run pytest -q --cov=app.services.assessment_service --cov=app.services.question_provider --cov=app.routes.assessment_routes --cov=app.repositories.assessment_repository --cov=app.schemas.assessment --cov=app.models.auth --cov=app.middlewares.role_middleware --cov-branch --cov-report=term-missing --cov-fail-under=95 tests/test_assessment_service.py tests/test_assessment_schemas.py tests/test_assessment_repository.py tests/test_assessment_routes.py tests/test_question_provider.py tests/test_progress_repository.py tests/test_auth_service.py
+
+      - name: Check assessment OpenAPI contract
+        run: uv run python -c "from app.main import app; paths = app.openapi()['paths']; assert '/assessments/{assessment_id}/attempts' in paths"
