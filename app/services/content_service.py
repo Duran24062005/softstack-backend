@@ -220,9 +220,25 @@ async def update_lesson(lessons: LessonRepository, media_repository: ContentMedi
 
 def get_progress(progress: ProgressRepository, lessons: LessonRepository, user: dict[str, Any]) -> dict[str, Any]:
     completed = progress.completed_for_user(user_object_id(user))
-    total = len(lessons.list(status=ContentStatus.PUBLISHED.value))
+    published_lessons = lessons.list(status=ContentStatus.PUBLISHED.value)
+    total = len(published_lessons)
     ids = [str(item["lesson_id"]) for item in completed]
-    return {"completed_lesson_ids": ids, "completed_count": len(ids), "total_lessons": total, "percentage": round((len(ids) / total) * 100, 1) if total else 0}
+    try:
+        completed_modules = list(progress.completed_modules_for_user(user_object_id(user)))
+    except (AttributeError, TypeError):
+        completed_modules = []
+    module_ids = [str(item["module_id"]) for item in completed_modules]
+    total_modules = len({str(lesson["module_id"]) for lesson in published_lessons if lesson.get("module_id")})
+    return {
+        "completed_lesson_ids": ids,
+        "completed_count": len(ids),
+        "total_lessons": total,
+        "percentage": round((len(ids) / total) * 100, 1) if total else 0,
+        "completed_module_ids": module_ids,
+        "completed_module_count": len(module_ids),
+        "total_modules": total_modules,
+        "module_percentage": round((len(module_ids) / total_modules) * 100, 1) if total_modules else 0,
+    }
 
 
 def complete_lesson(lessons: LessonRepository, progress: ProgressRepository, lesson_id: str, user: dict[str, Any]) -> dict[str, Any]:

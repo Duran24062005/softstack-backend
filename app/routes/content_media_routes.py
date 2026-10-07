@@ -15,7 +15,7 @@ from app.services.blob_storage import VercelBlobStorage
 from app.services.content_media_service import cleanup_orphaned_media, delete_content_media, import_external_url
 
 router = APIRouter(tags=["content-media"])
-admin = require_roles("admin")
+admin = require_roles("admin", "trainer")
 
 
 @router.post("/admin/content-media/import", response_model=MediaReference, status_code=status.HTTP_201_CREATED)

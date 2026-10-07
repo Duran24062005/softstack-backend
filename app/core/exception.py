@@ -82,6 +82,26 @@ class ContentMediaOperationError(ApplicationError):
     detail = "Could not process content media storage"
 
 
+class AssessmentUnavailableError(ApplicationError):
+    status_code = 409
+    detail = "This assessment is not ready for students"
+
+
+class AttemptLimitError(ApplicationError):
+    status_code = 409
+    detail = "No attempts remain for this assessment"
+
+
+class InvalidAssessmentAnswerError(ApplicationError):
+    status_code = 400
+    detail = "The submitted assessment answers are invalid"
+
+
+class AIProviderUnavailableError(ApplicationError):
+    status_code = 503
+    detail = "The question suggestion provider is unavailable"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApplicationError)
     async def application_error_handler(_: Request, error: ApplicationError) -> JSONResponse:
