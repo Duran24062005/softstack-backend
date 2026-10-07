@@ -59,9 +59,21 @@ La autenticación se encuentra bajo `/auth`: registro, verificación de email, l
 
 La primera vertical funcional mantiene compatibilidad con Bearer, pero el cliente web usa una sesión de cookies HttpOnly (`softstack_access` y `softstack_refresh`). Registro y login crean la sesión; refresh rota el refresh token; logout lo revoca y limpia ambas cookies. El perfil admite `full_name`, email y cambio de contraseña protegido por la contraseña actual.
 
-El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra de forma idempotente la finalización por usuario y lección. Los endpoints administrativos requieren `require_roles("admin")`; el frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
+El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra la finalización por usuario y lección. Las rutas editoriales requieren `require_roles("admin", "trainer")`; las rutas de gestión de usuarios, asignaciones, configuración y reinicios requieren `require_roles("admin")`. El frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
+
+## Vertical implementada: evaluaciones y trainers
+
+Las evaluaciones viven separadas del contenido en `assessments` y `questions`. Cada lección puede tener un quiz y cada módulo una evaluación final. Los `attempts` guardan una copia inmutable de las preguntas, opciones y respuesta correcta para conservar la trazabilidad aunque el banco se edite después.
+
+El estudiante recibe únicamente las opciones durante un intento activo. FastAPI selecciona preguntas aprobadas, reordena las opciones y evita repetir la posición de la respuesta correcta cuando el intento anterior contiene la misma pregunta. La calificación se ejecuta en backend; al aprobar se registra progreso de lección o módulo.
+
+`assessment_states` mantiene el ciclo y los intentos disponibles. Un reinicio administrativo incrementa el ciclo, cancela un intento activo si existe y conserva los intentos históricos en `assessment_resets` y `attempts`.
+
+El rol `trainer` puede editar contenido y evaluaciones y consultar analítica solo de estudiantes asignados mediante `trainer_assignments`. DeepSeek se integra detrás de `QuestionProvider`; sus sugerencias quedan como preguntas `suggested` hasta la aprobación humana.
 
 El seed inicial se ejecuta explícitamente con `uv run python -m scripts.seed_content` y no se dispara durante el arranque de la API.
+
+La superficie de evaluaciones mantiene pruebas aisladas por capa: los servicios usan repositorios falsos, las rutas se prueban con dependencias explícitas y el proveedor IA se sustituye por dobles que entregan respuestas válidas o inválidas. La CI exige cobertura de ramas focalizada de al menos 95 % y verifica que el contrato OpenAPI de intentos permanezca publicado.
 
 ## Core y middlewares
 

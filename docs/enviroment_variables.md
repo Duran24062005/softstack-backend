@@ -102,6 +102,20 @@ ADMIN_EMAILS=admin@example.com,otra-persona@example.com
 
 Si un usuario ya existe como `user`, agregar su email a `ADMIN_EMAILS` no lo promueve automáticamente. En ese caso hay que realizar una operación administrativa controlada sobre la base de datos o definir un flujo de promoción explícito.
 
+### Evaluaciones e IA
+
+| Variable | Para qué sirve | Valor por defecto | Notas |
+| --- | --- | --- | --- |
+| `AI_QUESTION_PROVIDER` | Proveedor activo para sugerir preguntas. | `deepseek` | Es un selector detrás de `QuestionProvider`; no se usa desde el navegador. |
+| `DEEPSEEK_API_KEY` | Credencial server-side para generar sugerencias. | Vacía | Nunca la expongas con `NEXT_PUBLIC_` ni la guardes en Git. |
+| `DEEPSEEK_BASE_URL` | URL base compatible con la API de DeepSeek. | `https://api.deepseek.com` | Permite sustituir el endpoint en pruebas o por otro proveedor compatible. |
+| `DEEPSEEK_MODEL` | Modelo utilizado por el adaptador inicial. | `deepseek-flash` | Cambiable sin modificar el contrato de preguntas. |
+| `DEEPSEEK_TIMEOUT_SECONDS` | Tiempo máximo de una sugerencia. | `30` | Un fallo no guarda preguntas parciales. |
+| `ASSESSMENT_DEFAULT_PASSING_SCORE` | Umbral inicial de aprobación global. | `80` | El valor vigente se administra desde la API y MongoDB. |
+| `ASSESSMENT_DEFAULT_QUESTION_COUNT` | Número inicial de preguntas por evaluación. | `5` | Debe estar entre 3 y 5. |
+
+El proveedor recibe únicamente título, descripción y texto educativo anonimizado. Las preguntas se guardan como sugerencias y necesitan aprobación humana.
+
 ### Cookies de autenticación
 
 | Variable | Para qué sirve | Valor por defecto | Notas |

@@ -22,6 +22,19 @@ Ejecuta las pruebas unitarias con:
 uv run pytest
 ```
 
+La funcionalidad de evaluaciones y trainers tiene una suite estricta sin MongoDB ni servicios externos reales. Para validar su cobertura de líneas y ramas:
+
+```bash
+uv run pytest -q --cov=app.services.assessment_service --cov=app.services.question_provider --cov=app.routes.assessment_routes --cov=app.repositories.assessment_repository --cov=app.schemas.assessment --cov=app.models.auth --cov=app.middlewares.role_middleware --cov-branch --cov-report=term-missing --cov-fail-under=95 tests/test_assessment_service.py tests/test_assessment_schemas.py tests/test_assessment_repository.py tests/test_assessment_routes.py tests/test_question_provider.py tests/test_progress_repository.py tests/test_auth_service.py
+```
+
+La validación de contratos también puede comprobarse sin levantar MongoDB:
+
+```bash
+uv run python -m compileall -q app tests
+uv run python -c "from app.main import app; paths = app.openapi()['paths']; assert '/assessments/{assessment_id}/attempts' in paths"
+```
+
 Las pruebas de servicios de contenido cubren medios anidados, límites, SSRF, portadas, compensación y limpieza de blobs.
 
 Puedes usar MongoDB local o configurar MongoDB Atlas en `MONGODB_URI`.
@@ -77,7 +90,10 @@ No guardes credenciales reales en el repositorio.
 - `POST /admin/modules/{id}/lessons`, `GET /admin/lessons/{id}` y `PATCH /admin/lessons/{id}` — gestión de lecciones para administradores.
 - `POST /admin/content-media/import` y `DELETE /admin/content-media` — importación segura y limpieza de medios para administradores.
 - `GET /internal/content-media/cleanup` — limpieza protegida de blobs de contenido huérfanos; Vercel Cron lo ejecuta diariamente.
-- `GET /me/progress` y `POST /lessons/{id}/complete` — progreso del estudiante.
+- `GET /me/progress` — progreso derivado de evaluaciones; la finalización manual dejó de ser válida.
+- `GET /assessments/lessons/{id}`, `GET /assessments/modules/{id}`, `POST /assessments/{id}/attempts` y `POST /attempts/{id}/submit` — quizzes e intentos del estudiante.
+- `/educator/*` — edición de evaluaciones, preguntas, sugerencias y analítica para admin/trainer.
+- `/admin/assessment-settings`, `/admin/students/{id}/trainer` y `/admin/assessments/{id}/students/{student_id}/reset` — configuración, asignaciones y reinicios protegidos para admin.
 
 Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos de cuenta mediante el endpoint público `/emails/transactional` del servicio configurado en `EMAIL_SERVICE_URL`. `FRONTEND_URL` se usa para generar los enlaces de verificación.
 
