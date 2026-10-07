@@ -14,13 +14,9 @@ class EmailServiceError(Exception):
 @dataclass(frozen=True)
 class TransactionalEmailClient:
     base_url: str = email_config["SERVICE_URL"]
-    api_key: str = email_config["SERVICE_API_KEY"]
     timeout_seconds: int = email_config["REQUEST_TIMEOUT_SECONDS"]
 
     async def send(self, *, recipient: str, subject: str, body: str, html_body: str) -> None:
-        if not self.api_key:
-            raise EmailServiceError("EMAIL_SERVICE_API_KEY is not configured")
-
         payload = json.dumps(
             {
                 "recipient": recipient,
@@ -34,7 +30,6 @@ class TransactionalEmailClient:
             data=payload,
             headers={
                 "Content-Type": "application/json",
-                "X-Internal-API-Key": self.api_key,
             },
             method="POST",
         )
