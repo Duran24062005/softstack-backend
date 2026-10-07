@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -12,6 +13,7 @@ from app.repositories.email_action_token_repository import EmailActionTokenRepos
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.services.account_email_service import AccountEmailService
+from app.services.email_service import EmailServiceError
 
 
 class FakeEmailClient:
@@ -20,6 +22,11 @@ class FakeEmailClient:
 
     async def send(self, **message):
         self.messages.append(message)
+
+
+class FailingEmailClient:
+    async def send(self, **_message):
+        raise EmailServiceError("provider unavailable")
 
 
 def make_service():
@@ -51,6 +58,41 @@ def test_verification_email_stores_hash_and_verifies_once():
 
     users.mark_email_verified.assert_called_once_with(user_id)
     action_tokens.consume.assert_called_once_with("token-1")
+
+
+def test_verification_email_keeps_registration_non_blocking_when_provider_fails(caplog):
+    users = Mock(spec=UserRepository)
+    action_tokens = Mock(spec=EmailActionTokenRepository)
+    refresh_tokens = Mock(spec=RefreshTokenRepository)
+    service = AccountEmailService(users, action_tokens, refresh_tokens, FailingEmailClient())
+    user = {"_id": "user-1", "email": "person@example.com", "full_name": "Alex", "is_active": True}
+
+    with caplog.at_level(logging.ERROR):
+        asyncio.run(service.send_verification(user))
+
+    action_tokens.invalidate_active.assert_called_once_with("user-1", "email_verification")
+    action_tokens.create.assert_called_once()
+    assert "Verification email could not be delivered" in caplog.text
+
+
+def test_resend_verification_normalizes_email_and_skips_verified_accounts():
+    service, users, _, _, client = make_service()
+    user = {"_id": "user-1", "email": "person@example.com", "full_name": "Alex", "is_active": True, "email_verified": False}
+    users.find_by_email.return_value = user
+
+    asyncio.run(service.resend_verification("PERSON@example.com"))
+
+    users.find_by_email.assert_called_once_with("person@example.com")
+    assert len(client.messages) == 1
+
+    users.find_by_email.reset_mock()
+    client.messages.clear()
+    users.find_by_email.return_value = {**user, "email_verified": True}
+
+    asyncio.run(service.resend_verification("PERSON@example.com"))
+
+    users.find_by_email.assert_called_once_with("person@example.com")
+    assert client.messages == []
 
 
 def test_reset_password_consumes_code_and_revokes_sessions():
