@@ -14,6 +14,14 @@ class UserRepository:
     def find_by_id(self, user_id: Any) -> dict[str, Any] | None:
         return self.collection.find_one({"_id": user_id})
 
+    def list_by_ids(self, user_ids: list[Any]) -> list[dict[str, Any]]:
+        if not user_ids:
+            return []
+        return list(self.collection.find({"_id": {"$in": user_ids}}).sort("full_name", 1))
+
+    def list_by_role(self, role: str) -> list[dict[str, Any]]:
+        return list(self.collection.find({"role": role}).sort("full_name", 1))
+
     def create(self, document: dict[str, Any]) -> dict[str, Any]:
         result = self.collection.insert_one(document)
         document["_id"] = result.inserted_id

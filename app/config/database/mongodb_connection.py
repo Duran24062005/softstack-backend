@@ -37,6 +37,16 @@ def initialize_indexes(database: Database) -> None:
     database.lessons.create_index("media_assets.pathname")
     database.progress.create_index([("user_id", ASCENDING), ("lesson_id", ASCENDING)], unique=True)
     database.progress.create_index([("user_id", ASCENDING), ("completed_at", ASCENDING)])
+    database.module_progress.create_index([("user_id", ASCENDING), ("module_id", ASCENDING)], unique=True)
+    database.assessments.create_index([("target_type", ASCENDING), ("target_id", ASCENDING)], unique=True)
+    database.questions.create_index([("assessment_id", ASCENDING), ("status", ASCENDING)])
+    database.attempts.create_index([("user_id", ASCENDING), ("assessment_id", ASCENDING), ("cycle", ASCENDING), ("attempt_number", ASCENDING)], unique=True)
+    database.attempts.create_index([("user_id", ASCENDING), ("submitted_at", ASCENDING)])
+    database.assessment_states.create_index([("user_id", ASCENDING), ("assessment_id", ASCENDING)], unique=True)
+    database.assessment_resets.create_index([("user_id", ASCENDING), ("assessment_id", ASCENDING), ("created_at", ASCENDING)])
+    database.trainer_assignments.create_index("student_id", unique=True)
+    database.trainer_assignments.create_index("trainer_id")
+    database.assessment_settings.create_index("key", unique=True)
 
 
 def close_mongodb_client(request: Request) -> None:

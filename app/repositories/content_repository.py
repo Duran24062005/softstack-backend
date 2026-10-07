@@ -60,9 +60,19 @@ class ProgressRepository:
     def completed_for_user(self, user_id: ObjectId) -> list[dict[str, Any]]:
         return list(self.collection.find({"user_id": user_id}).sort("completed_at", 1))
 
-    def complete(self, user_id: ObjectId, lesson_id: ObjectId, module_id: ObjectId) -> None:
+    def complete(self, user_id: ObjectId, lesson_id: ObjectId, module_id: ObjectId, source: str = "manual_legacy") -> None:
         self.collection.update_one(
             {"user_id": user_id, "lesson_id": lesson_id},
-            {"$setOnInsert": {"user_id": user_id, "lesson_id": lesson_id, "module_id": module_id, "completed_at": datetime.now(timezone.utc)}},
+            {"$setOnInsert": {"user_id": user_id, "lesson_id": lesson_id, "module_id": module_id, "completion_source": source, "completed_at": datetime.now(timezone.utc)}},
             upsert=True,
         )
+
+    def complete_module(self, user_id: ObjectId, module_id: ObjectId) -> None:
+        self.collection.database.module_progress.update_one(
+            {"user_id": user_id, "module_id": module_id},
+            {"$setOnInsert": {"user_id": user_id, "module_id": module_id, "completed_at": datetime.now(timezone.utc)}},
+            upsert=True,
+        )
+
+    def completed_modules_for_user(self, user_id: ObjectId) -> list[dict[str, Any]]:
+        return list(self.collection.database.module_progress.find({"user_id": user_id}).sort("completed_at", 1))

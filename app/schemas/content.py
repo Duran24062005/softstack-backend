@@ -77,3 +77,7 @@ class ProgressSummaryResponse(BaseModel):
     completed_count: int
     total_lessons: int
     percentage: float
+    completed_module_ids: list[str] = []
+    completed_module_count: int = 0
+    total_modules: int = 0
+    module_percentage: float = 0

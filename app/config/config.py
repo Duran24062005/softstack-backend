@@ -105,3 +105,17 @@ content_blob_config = {
 cron_config = {
     "SECRET": os.getenv("CRON_SECRET", ""),
 }
+
+ai_config = {
+    "PROVIDER": os.getenv("AI_QUESTION_PROVIDER", "deepseek").lower(),
+    "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY", ""),
+    "DEEPSEEK_BASE_URL": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/"),
+    "DEEPSEEK_MODEL": os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
+    "DEEPSEEK_TIMEOUT_SECONDS": _env_int("DEEPSEEK_TIMEOUT_SECONDS", 30),
+}
+
+assessment_config = {
+    "DEFAULT_PASSING_SCORE": _env_int("ASSESSMENT_DEFAULT_PASSING_SCORE", 80),
+    "MAX_ATTEMPTS": 3,
+    "DEFAULT_QUESTION_COUNT": _env_int("ASSESSMENT_DEFAULT_QUESTION_COUNT", 5),
+}
