@@ -95,7 +95,7 @@ No guardes credenciales reales en el repositorio.
 - `/educator/*` — edición de evaluaciones, preguntas, sugerencias y analítica para admin/trainer.
 - `/admin/assessment-settings`, `/admin/students/{id}/trainer` y `/admin/assessments/{id}/students/{student_id}/reset` — configuración, asignaciones y reinicios protegidos para admin.
 
-Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos de cuenta mediante el endpoint público `/emails/transactional` del servicio configurado en `EMAIL_SERVICE_URL`. `FRONTEND_URL` se usa para generar los enlaces de verificación.
+Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos de cuenta mediante el endpoint público `/emails/send` del servicio configurado en `EMAIL_SERVICE_URL`, usando el `user_id` de proveedor `1` requerido por ese contrato y sin API key. `FRONTEND_URL` se usa para generar los enlaces de verificación.
 
 Las fotos de perfil usan un Blob Store privado de Vercel. Configura `BLOB_STORE_ID` y `BLOB_READ_WRITE_TOKEN` en el backend; nunca expongas el token al frontend. Se aceptan imágenes JPG, PNG y WebP de máximo 3 MB.
 

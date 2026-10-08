@@ -4,21 +4,21 @@
 
 El backend usa `TransactionalEmailClient` para llamar al proveedor externo:
 
-- `POST {EMAIL_SERVICE_URL}/emails/transactional`
+- `POST {EMAIL_SERVICE_URL}/emails/send`
 - Header `Content-Type: application/json`
-- Body con `recipient`, `subject`, `body` y `html_body`
+- Body con `user_id`, `recipient`, `subject`, `body` y `html_body`
+- `user_id` fijo en `1`, porque el proveedor exige un entero y los usuarios de
+  SoftStack se identifican con `ObjectId` de MongoDB
 - Respuesta aceptada: cualquier estado HTTP `2xx`; el proveedor desplegado
-  responde `202 Accepted`.
+  responde `201 Created`.
 
-El contrato se comprobó contra el OpenAPI público del proveedor el 7 de
-octubre de 2026. El checkout local de `Email_Python_FastAPI` contiene rutas
-históricas adicionales y no debe usarse como única fuente para validar el
-despliegue activo.
+El contrato corresponde al PRD 022 del proveedor. La llamada no envía API key
+ni otro header de autenticación.
 
 ## Qué cubren las pruebas
 
 - Construcción exacta de URL, headers, timeout y payload.
-- Envío sin una API key local porque el endpoint transaccional es público.
+- Envío sin una API key porque `/emails/send` es público.
 - Traducción de errores HTTP y de red a `EmailServiceError`.
 - Registro con `verification_required=true` y envío del mensaje.
 - Verificación válida, token inválido y reenvío con respuesta genérica.
@@ -37,10 +37,9 @@ persiste el token, registra el error y permite usar `POST
 revisar los logs del backend y la trazabilidad del proveedor cuando un usuario
 no recibe el correo.
 
-El endpoint genérico `/emails/send` documentado por el proveedor requiere un
-`user_id` entero y se reserva para su flujo de bandeja. No se utiliza para la
-verificación de SoftStack porque los usuarios de SoftStack usan identificadores
-MongoDB y el envío transaccional no debe depender de esa bandeja.
+El `user_id=1` enviado al proveedor es únicamente un identificador de remitente
+del sistema de correo. No representa ni sustituye al `_id` MongoDB del usuario
+de SoftStack.
 
 ## Ejecución
 

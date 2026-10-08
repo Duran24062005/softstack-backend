@@ -9,4 +9,4 @@
 | [`005-content-media-storage.md`](./005-content-media-storage.md) | Imágenes, videos y portadas de contenido con Vercel Blob público | Implementado |
 | [`006-assessments-and-trainers.md`](./006-assessments-and-trainers.md) | Quizzes, intentos, banco de preguntas, DeepSeek y rol trainer | Implementado |
 
-Cada PRD documenta el contrato funcional, las reglas de seguridad, la persistencia y los límites conocidos de su vertical. SoftStack consume el endpoint transaccional del proveedor externo desplegado en `https://email-python-fast-api.vercel.app`.
+Cada PRD documenta el contrato funcional, las reglas de seguridad, la persistencia y los límites conocidos de su vertical. SoftStack consume `POST /emails/send` del proveedor externo desplegado en `https://email-python-fast-api.vercel.app`, sin API key.

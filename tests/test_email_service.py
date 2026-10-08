@@ -34,7 +34,7 @@ def send_message(client: TransactionalEmailClient) -> None:
     )
 
 
-def test_transactional_client_matches_provider_contract():
+def test_email_client_matches_provider_contract():
     client = TransactionalEmailClient(
         base_url="https://email-provider.example",
         timeout_seconds=7,
@@ -48,11 +48,13 @@ def test_transactional_client_matches_provider_contract():
     request, = urlopen.call_args.args
     headers = {name.lower(): value for name, value in request.header_items()}
 
-    assert request.full_url == "https://email-provider.example/emails/transactional"
+    assert request.full_url == "https://email-provider.example/emails/send"
     assert request.method == "POST"
     assert headers["content-type"] == "application/json"
     assert "x-internal-api-key" not in headers
+    assert "authorization" not in headers
     assert json.loads(request.data) == {
+        "user_id": 1,
         "recipient": "person@example.com",
         "subject": "Confirma tu cuenta",
         "body": "Confirma tu cuenta aquí: https://frontend.example/verify-email?token=abc",
@@ -61,7 +63,7 @@ def test_transactional_client_matches_provider_contract():
     assert urlopen.call_args.kwargs == {"timeout": 7}
 
 
-def test_transactional_client_is_public_and_does_not_require_api_key():
+def test_email_client_is_public_and_does_not_require_api_key():
     client = TransactionalEmailClient(base_url="https://email-provider.example")
 
     with patch("app.services.email_service.asyncio.to_thread", new=run_in_place), patch(
@@ -72,7 +74,7 @@ def test_transactional_client_is_public_and_does_not_require_api_key():
     urlopen.assert_called_once()
 
 
-def test_transactional_client_reports_provider_status_errors():
+def test_email_client_reports_provider_status_errors():
     client = TransactionalEmailClient(base_url="https://email-provider.example")
 
     with patch("app.services.email_service.asyncio.to_thread", new=run_in_place), patch(
@@ -82,7 +84,7 @@ def test_transactional_client_reports_provider_status_errors():
             send_message(client)
 
 
-def test_transactional_client_normalizes_network_errors():
+def test_email_client_normalizes_network_errors():
     client = TransactionalEmailClient(base_url="https://email-provider.example")
 
     with patch("app.services.email_service.asyncio.to_thread", new=run_in_place), patch(

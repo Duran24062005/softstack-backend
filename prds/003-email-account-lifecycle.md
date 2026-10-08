@@ -24,7 +24,7 @@ El objetivo es que:
 - `POST /auth/reset-password` para validar el código y cambiar la contraseña.
 - Colección `email_action_tokens` para hashes de tokens/códigos, expiración, consumo e intentos.
 - Revocación de refresh tokens después de cambiar la contraseña.
-- Cliente HTTP hacia el endpoint transaccional del proveedor externo.
+- Cliente HTTP hacia `POST /emails/send` del proveedor externo.
 - Pantallas frontend para confirmar email, solicitar recuperación y establecer nueva contraseña.
 - Plantillas HTML/texto para confirmación y recuperación.
 - Variables de entorno, pruebas y documentación de contratos.
@@ -160,15 +160,16 @@ No se persisten tokens de confirmación ni códigos en texto plano.
 
 ## Integración de correo
 
-SoftStack llama a `POST /emails/transactional` del proveedor externo (`https://email-python-fast-api.vercel.app`) con:
+SoftStack llama a `POST /emails/send` del proveedor externo (`https://email-python-fast-api.vercel.app`) con:
 
+- `user_id: 1` fijo, requerido por el contrato del proveedor;
 - `recipient`;
 - `subject`;
 - `body`;
 - `html_body` opcional;
-- header `X-Internal-API-Key`.
+- sin API key ni otro header de autenticación.
 
-El proveedor no usa la base de usuarios de SoftStack ni requiere un `user_id` externo. En desarrollo puede usar `MockEmailSender`; en producción usa el SMTP configurado en el repositorio de correo.
+El `user_id` del proveedor identifica un remitente dentro de su propia base y no es el `_id` MongoDB de SoftStack. En desarrollo puede usar `MockEmailSender`; en producción usa el SMTP configurado en el repositorio de correo.
 
 ## Reglas de seguridad
 

@@ -8,7 +8,12 @@ from app.config.config import email_config
 
 
 class EmailServiceError(Exception):
-    """Raised when the transactional email provider cannot accept a message."""
+    """Raised when the email provider cannot accept a message."""
+
+
+# The provider's /emails/send contract requires an integer sender id. SoftStack
+# users use MongoDB ObjectIds, so this fixed provider-side id is intentional.
+EMAIL_PROVIDER_USER_ID = 1
 
 
 @dataclass(frozen=True)
@@ -19,6 +24,7 @@ class TransactionalEmailClient:
     async def send(self, *, recipient: str, subject: str, body: str, html_body: str) -> None:
         payload = json.dumps(
             {
+                "user_id": EMAIL_PROVIDER_USER_ID,
                 "recipient": recipient,
                 "subject": subject,
                 "body": body,
@@ -26,7 +32,7 @@ class TransactionalEmailClient:
             }
         ).encode("utf-8")
         request = Request(
-            f"{self.base_url}/emails/transactional",
+            f"{self.base_url}/emails/send",
             data=payload,
             headers={
                 "Content-Type": "application/json",
