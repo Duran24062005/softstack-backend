@@ -56,6 +56,8 @@ COOKIE_DOMAIN=
 
 El email de `ADMIN_EMAILS` debe coincidir con el que usarás en el registro. Si el usuario ya existe como `user`, la variable no lo convierte automáticamente en administrador.
 
+Los registros normales comienzan en estado `pending` y no pueden iniciar sesión hasta que un administrador los apruebe. Los estados `rejected` e `inactive` también bloquean el acceso. Las cuentas existentes pueden normalizarse con `uv run python -m scripts.migrate_account_status --apply`.
+
 ## Docker Compose
 
 ```bash
@@ -94,6 +96,7 @@ No guardes credenciales reales en el repositorio.
 - `GET /assessments/lessons/{id}`, `GET /assessments/modules/{id}`, `POST /assessments/{id}/attempts` y `POST /attempts/{id}/submit` — quizzes e intentos del estudiante.
 - `/educator/*` — edición de evaluaciones, preguntas, sugerencias y analítica para admin/trainer.
 - `/admin/assessment-settings`, `/admin/students/{id}/trainer` y `/admin/assessments/{id}/students/{student_id}/reset` — configuración, asignaciones y reinicios protegidos para admin.
+- `GET /admin/users` y `PATCH /admin/users/{id}/status` — revisión, aprobación, rechazo, inactivación y reactivación de cuentas para admin.
 
 Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend viven en dominios distintos, configura `COOKIE_SAMESITE=none`, HTTPS y `CORS_ORIGINS` con el origen exacto del frontend. El backend envía correos de cuenta mediante el endpoint público `/emails/send` del servicio configurado en `EMAIL_SERVICE_URL`, usando el `user_id` de proveedor `1` requerido por ese contrato y sin API key. `FRONTEND_URL` se usa para generar los enlaces de verificación.
 

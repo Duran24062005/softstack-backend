@@ -8,5 +8,6 @@
 | [`004-profile-photo-storage.md`](./004-profile-photo-storage.md) | Fotos de perfil privadas con Vercel Blob | Implementado |
 | [`005-content-media-storage.md`](./005-content-media-storage.md) | Imágenes, videos y portadas de contenido con Vercel Blob público | Implementado |
 | [`006-assessments-and-trainers.md`](./006-assessments-and-trainers.md) | Quizzes, intentos, banco de preguntas, DeepSeek y rol trainer | Implementado |
+| [`007-account-approval-and-status.md`](./007-account-approval-and-status.md) | Aprobación administrativa y estado de cuentas | Implementado |
 
 Cada PRD documenta el contrato funcional, las reglas de seguridad, la persistencia y los límites conocidos de su vertical. SoftStack consume `POST /emails/send` del proveedor externo desplegado en `https://email-python-fast-api.vercel.app`, sin API key.

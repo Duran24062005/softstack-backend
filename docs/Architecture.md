@@ -55,11 +55,15 @@ El `MongoClient` se crea una vez durante el lifespan de FastAPI, se expone en `a
 
 La autenticación se encuentra bajo `/auth`: registro, verificación de email, login, `/me`, recuperación de contraseña y logout. Los access tokens JWT se validan con Bearer; los refresh tokens se almacenan en `refresh_tokens` únicamente como hashes. Los enlaces y códigos temporales se guardan en `email_action_tokens` únicamente como hashes y se consumen una vez.
 
+Las cuentas normales se registran con `account_status=pending` e `is_active=false`. La verificación de email no sustituye la aprobación administrativa. Solo una cuenta `active` y verificada puede iniciar sesión; `rejected` e `inactive` permanecen bloqueadas. Las cuentas cuyo email pertenece a `ADMIN_EMAILS` conservan el alta administrativa de bootstrap.
+
 ## Vertical implementada: sesión, aprendizaje y edición
 
 La primera vertical funcional mantiene compatibilidad con Bearer, pero el cliente web usa una sesión de cookies HttpOnly (`softstack_access` y `softstack_refresh`). Registro y login crean la sesión; refresh rota el refresh token; logout lo revoca y limpia ambas cookies. El perfil admite `full_name`, email y cambio de contraseña protegido por la contraseña actual.
 
 El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra la finalización por usuario y lección. Las rutas editoriales requieren `require_roles("admin", "trainer")`; las rutas de gestión de usuarios, asignaciones, configuración y reinicios requieren `require_roles("admin")`. El frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
+
+La gestión de cuentas vive en `/admin/users`. El backend devuelve roles y estados, valida las transiciones `pending → active/rejected`, `rejected → pending` y `active ↔ inactive`, y registra el último actor y momento del cambio en el documento de usuario.
 
 ## Vertical implementada: evaluaciones y trainers
 
