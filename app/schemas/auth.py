@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
-from app.models.auth import UserRole
+from app.models.auth import AccountStatus, UserRole
 
 
 class RegisterRequest(BaseModel):
@@ -46,9 +46,19 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: UserRole
     is_active: bool
+    account_status: AccountStatus
     email_verified: bool
     has_profile_photo: bool = False
     created_at: datetime
+
+
+class AdminUserResponse(UserResponse):
+    status_changed_at: datetime | None = None
+    status_changed_by: str | None = None
+
+
+class AccountStatusUpdateRequest(BaseModel):
+    account_status: AccountStatus
 
 
 class AuthResponse(BaseModel):

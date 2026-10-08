@@ -9,6 +9,7 @@ from app.core.security import hash_password, hash_token
 from app.repositories.email_action_token_repository import EmailActionTokenRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
+from app.models.auth import AccountStatus, effective_account_status
 from app.services.email_service import EmailServiceError, TransactionalEmailClient
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class AccountEmailService:
 
     async def resend_verification(self, email: str) -> None:
         user = self.users.find_by_email(email.lower())
-        if user and user.get("is_active") and not user.get("email_verified", True):
+        if user and effective_account_status(user) in {AccountStatus.PENDING, AccountStatus.ACTIVE} and not user.get("email_verified", True):
             await self.send_verification(user)
 
     def verify_email(self, raw_token: str) -> None:
@@ -65,7 +66,7 @@ class AccountEmailService:
 
     async def request_password_reset(self, email: str) -> None:
         user = self.users.find_by_email(email.lower())
-        if not user or not user.get("is_active"):
+        if not user or effective_account_status(user) != AccountStatus.ACTIVE:
             return
 
         code = f"{secrets.randbelow(1_000_000):06d}"

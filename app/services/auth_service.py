@@ -5,17 +5,31 @@ from pymongo.errors import DuplicateKeyError
 
 from app.config.config import security_config
 from app.core.exception import AuthenticationError, ConflictError, EmailNotVerifiedError, NotFoundError
-from app.models.auth import UserRole, public_user
+from app.models.auth import AccountStatus, UserRole, public_user
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.core.security import create_access_token, create_refresh_token, hash_password, hash_token, verify_password
+from app.services.account_status_service import ensure_active_account
 
 
 def register_user(users: UserRepository, email: str, password: str, full_name: str = "") -> dict[str, Any]:
     normalized_email = email.lower()
     now = datetime.now(timezone.utc)
     role = UserRole.ADMIN if normalized_email in security_config["ADMIN_EMAILS"] else UserRole.USER
-    document = {"full_name": full_name.strip(), "email": normalized_email, "password_hash": hash_password(password), "role": role.value, "is_active": True, "email_verified": False, "created_at": now, "updated_at": now}
+    account_status = AccountStatus.ACTIVE if role == UserRole.ADMIN else AccountStatus.PENDING
+    document = {
+        "full_name": full_name.strip(),
+        "email": normalized_email,
+        "password_hash": hash_password(password),
+        "role": role.value,
+        "is_active": account_status == AccountStatus.ACTIVE,
+        "account_status": account_status.value,
+        "status_changed_at": None,
+        "status_changed_by": None,
+        "email_verified": False,
+        "created_at": now,
+        "updated_at": now,
+    }
     try:
         return public_user(users.create(document))
     except DuplicateKeyError as error:
@@ -24,10 +38,11 @@ def register_user(users: UserRepository, email: str, password: str, full_name: s
 
 def authenticate(users: UserRepository, refresh_tokens: RefreshTokenRepository, email: str, password: str) -> dict[str, Any]:
     user = users.find_by_email(email.lower())
-    if not user or not user.get("is_active") or not verify_password(password, user["password_hash"]):
+    if not user or not verify_password(password, user["password_hash"]):
         raise AuthenticationError
     if not user.get("email_verified", True):
         raise EmailNotVerifiedError
+    ensure_active_account(user)
     access, expires_in = create_access_token(str(user["_id"]), user["role"])
     refresh, refresh_expires = create_refresh_token(str(user["_id"]), user["role"])
     refresh_tokens.create({"token_hash": hash_token(refresh), "user_id": user["_id"], "expires_at": refresh_expires, "created_at": datetime.now(timezone.utc), "revoked_at": None})
@@ -43,8 +58,9 @@ def refresh_session(users: UserRepository, refresh_tokens: RefreshTokenRepositor
         user = users.find_by_id(stored["user_id"]) if stored else None
     except Exception as error:
         raise AuthenticationError from error
-    if not stored or not user or not user.get("is_active"):
+    if not stored or not user:
         raise AuthenticationError
+    ensure_active_account(user)
     refresh_tokens.revoke(hash_token(token))
     access, expires_in = create_access_token(str(user["_id"]), user["role"])
     new_refresh, refresh_expires = create_refresh_token(str(user["_id"]), user["role"])

@@ -14,6 +14,7 @@ from app.models.auth import public_user
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import authenticate, register_user, refresh_session, update_profile
+from app.services.account_status_service import ensure_active_account
 
 
 def register_user_controller(users: UserRepository, email: str, password: str, full_name: str):
@@ -54,8 +55,9 @@ def current_user_auth_controller(credentials: HTTPAuthorizationCredentials | Non
         user = users.find_by_id(ObjectId(payload["sub"]))
     except Exception as error:
         raise InvalidTokenError from error
-    if not user or not user.get("is_active"):
+    if not user:
         raise InactiveUserError
+    ensure_active_account(user)
     return user
 
 

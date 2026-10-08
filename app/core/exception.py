@@ -37,6 +37,21 @@ class InactiveUserError(ApplicationError):
     detail = "User is inactive or unavailable"
 
 
+class AccountPendingApprovalError(ApplicationError):
+    status_code = 403
+    detail = "Tu cuenta está pendiente de aprobación administrativa"
+
+
+class AccountRejectedError(ApplicationError):
+    status_code = 403
+    detail = "Tu cuenta no fue aprobada por la administración"
+
+
+class InvalidAccountStatusTransitionError(ApplicationError):
+    status_code = 409
+    detail = "Invalid account status transition"
+
+
 class EmailNotVerifiedError(ApplicationError):
     status_code = 403
     detail = "Email address must be verified before signing in"
