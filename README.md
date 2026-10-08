@@ -93,8 +93,9 @@ No guardes credenciales reales en el repositorio.
 - `POST /admin/content-media/import` y `DELETE /admin/content-media` — importación segura y limpieza de medios para administradores.
 - `GET /internal/content-media/cleanup` — limpieza protegida de blobs de contenido huérfanos; Vercel Cron lo ejecuta diariamente.
 - `GET /me/progress` — progreso derivado de evaluaciones; la finalización manual dejó de ser válida.
+- `GET /me/analytics?period=7d|30d|90d|all` — tendencias privadas de avance, calificación y actividad del estudiante.
 - `GET /assessments/lessons/{id}`, `GET /assessments/modules/{id}`, `POST /assessments/{id}/attempts` y `POST /attempts/{id}/submit` — quizzes e intentos del estudiante.
-- `/educator/*` — edición de evaluaciones, preguntas, sugerencias y analítica para admin/trainer.
+- `/educator/*` — edición de evaluaciones, preguntas, sugerencias y analítica para admin/trainer; las series aceptan el mismo parámetro `period`.
 - `/admin/assessment-settings`, `/admin/students/{id}/trainer` y `/admin/assessments/{id}/students/{student_id}/reset` — configuración, asignaciones y reinicios protegidos para admin.
 - `GET /admin/users` y `PATCH /admin/users/{id}/status` — revisión, aprobación, rechazo, inactivación y reactivación de cuentas para admin.
 

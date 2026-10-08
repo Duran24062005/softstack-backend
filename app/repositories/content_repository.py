@@ -60,6 +60,11 @@ class ProgressRepository:
     def completed_for_user(self, user_id: ObjectId) -> list[dict[str, Any]]:
         return list(self.collection.find({"user_id": user_id}).sort("completed_at", 1))
 
+    def completed_for_users(self, user_ids: list[ObjectId]) -> list[dict[str, Any]]:
+        if not user_ids:
+            return []
+        return list(self.collection.find({"user_id": {"$in": user_ids}}).sort("completed_at", 1))
+
     def complete(self, user_id: ObjectId, lesson_id: ObjectId, module_id: ObjectId, source: str = "manual_legacy") -> None:
         self.collection.update_one(
             {"user_id": user_id, "lesson_id": lesson_id},
@@ -76,3 +81,8 @@ class ProgressRepository:
 
     def completed_modules_for_user(self, user_id: ObjectId) -> list[dict[str, Any]]:
         return list(self.collection.database.module_progress.find({"user_id": user_id}).sort("completed_at", 1))
+
+    def completed_modules_for_users(self, user_ids: list[ObjectId]) -> list[dict[str, Any]]:
+        if not user_ids:
+            return []
+        return list(self.collection.database.module_progress.find({"user_id": {"$in": user_ids}}).sort("completed_at", 1))

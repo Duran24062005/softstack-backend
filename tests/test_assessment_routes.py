@@ -26,6 +26,7 @@ from app.routes.assessment_routes import (
     lesson_assessment,
     list_students,
     list_trainers,
+    my_analytics,
     module_assessment,
     my_assessment_attempts,
     my_assessment_results,
@@ -297,6 +298,36 @@ def test_trainer_analytics_are_scoped_to_assigned_students_and_group_failures():
     assert allowed["student_id"] == str(assigned_student["_id"])
     with pytest.raises(AuthorizationError):
         student_analytics(str(outsider["_id"]), educator_user=trainer, assessments=repository, users=users)
+
+
+def test_student_analytics_endpoint_returns_period_series_from_private_events():
+    student = user("user")
+    repository = FakeAssessmentRepository()
+    now = datetime.now(timezone.utc)
+    lesson_id = repository.assessment["target_id"]
+    module_id = ObjectId()
+    progress = FakeProgress()
+    progress.completed = [{"user_id": student["_id"], "lesson_id": lesson_id, "module_id": module_id, "completed_at": now}]
+    lessons = FakeLessons(lesson_id, module_id)
+    repository.attempts.append({
+        "_id": ObjectId(),
+        "user_id": student["_id"],
+        "assessment_id": repository.assessment_id,
+        "status": "submitted",
+        "score": 90,
+        "passed": True,
+        "attempt_number": 1,
+        "cycle": 1,
+        "answers": [],
+        "submitted_at": now,
+    })
+
+    payload = my_analytics(period="all", user=student, assessments=repository, progress=progress, lessons=lessons)
+
+    assert payload["student_id"] == str(student["_id"])
+    assert payload["attempts_count"] == 1
+    assert payload["average_score"] == 90
+    assert payload["activity_series"][0]["total"] == 2
 
 
 def test_generate_suggestions_persists_actual_provider_metadata(monkeypatch):

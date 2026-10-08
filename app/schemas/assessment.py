@@ -166,19 +166,3 @@ class TrainerInvitationRequest(BaseModel):
 
 class RoleUpdateRequest(BaseModel):
     role: Literal["user", "trainer"]
-
-
-class AnalyticsOverviewResponse(BaseModel):
-    students: int
-    assigned_students: int
-    attempts: int
-    average_score: float
-    failed_competencies: list[dict[str, int | str]]
-
-
-class StudentAnalyticsResponse(BaseModel):
-    student_id: str
-    student_name: str
-    trainer_id: str | None = None
-    attempts: list[AssessmentAttemptSummary]
-    failed_competencies: list[dict[str, int | str]]

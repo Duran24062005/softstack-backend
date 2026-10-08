@@ -26,12 +26,12 @@ from app.schemas.assessment import (
     QuestionAdminResponse,
     QuestionCreateRequest,
     QuestionUpdateRequest,
-    StudentAnalyticsResponse,
     TrainerAssignmentRequest,
     TrainerInvitationRequest,
     RoleUpdateRequest,
 )
-from app.services.auth_service import register_user
+from app.schemas.analytics import AnalyticsOverviewResponse, AnalyticsPeriod, MyAnalyticsResponse, StudentAnalyticsResponse
+from app.services.auth_service import create_trainer_user
 from app.services.account_email_service import AccountEmailService
 from app.routes.dependencies import get_account_email_service
 from app.services.assessment_service import (
@@ -46,6 +46,7 @@ from app.services.assessment_service import (
     update_assessment,
     update_question,
 )
+from app.services.analytics_service import build_analytics, in_period, period_start
 from app.services.question_provider import get_question_provider, tiptap_to_text
 
 router = APIRouter(tags=["assessments"])
@@ -184,13 +185,13 @@ def assign_trainer(student_id: str, payload: TrainerAssignmentRequest, admin_use
 @router.post("/admin/trainers/invitations")
 async def invite_trainer(payload: TrainerInvitationRequest, _: dict = Depends(admin), users: UserRepository = Depends(get_user_repository), account_email: AccountEmailService = Depends(get_account_email_service)):
     try:
-        created = register_user(users, payload.email, payload.password, payload.full_name)
+        create_trainer_user(users, payload.email, payload.password, payload.full_name)
     except ConflictError:
         raise
     user = users.find_by_email(payload.email.lower())
     if not user:
         raise NotFoundError
-    updated = users.update(user["_id"], {"role": "trainer"})
+    updated = users.find_by_email(payload.email.lower())
     if updated:
         await account_email.send_verification(updated)
     return public_user(updated or users.find_by_email(payload.email.lower()))
@@ -217,27 +218,58 @@ def update_user_role(user_id: str, payload: RoleUpdateRequest, _: dict = Depends
     return public_user(updated)
 
 
-@router.get("/educator/analytics/overview")
-def analytics_overview(educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository)):
-    student_ids = assessments.students_for_trainer(educator_user["_id"]) if educator_user.get("role") == "trainer" else [user["_id"] for user in users.list_by_role("user")]
-    attempts = [attempt for attempt in assessments.list_attempts(student_ids=student_ids) if attempt.get("status") == "submitted"]
-    competency_counts: dict[str, int] = {}
-    for attempt in attempts:
-        for answer in attempt.get("answers", []):
-            if not answer.get("is_correct"):
-                competency = answer.get("competency", "Sin clasificar")
-                competency_counts[competency] = competency_counts.get(competency, 0) + 1
-    scores = [float(attempt.get("score", 0)) for attempt in attempts]
-    return {"students": len(student_ids), "assigned_students": len(student_ids), "attempts": len(attempts), "average_score": round(sum(scores) / len(scores), 1) if scores else 0, "failed_competencies": [{"competency": key, "count": value} for key, value in sorted(competency_counts.items(), key=lambda item: item[1], reverse=True)]}
+def _educator_student_ids(educator_user: dict[str, Any], assessments: AssessmentRepository, users: UserRepository) -> list[Any]:
+    if educator_user.get("role") == "trainer":
+        return assessments.students_for_trainer(educator_user["_id"])
+    return [user["_id"] for user in users.list_by_role("user")]
+
+
+def _published_content_ids(lessons: Any) -> tuple[set[str], set[str]]:
+    if not hasattr(lessons, "list"):
+        return set(), set()
+    try:
+        published_lessons = lessons.list(status="published")
+    except (AttributeError, TypeError):
+        return set(), set()
+    lesson_ids = {str(lesson["_id"]) for lesson in published_lessons if lesson.get("_id") is not None}
+    module_ids = {str(lesson["module_id"]) for lesson in published_lessons if lesson.get("module_id") is not None}
+    return lesson_ids, module_ids
+
+
+def _scoped_analytics(period: AnalyticsPeriod, student_ids: list[Any], assessments: AssessmentRepository, progress: Any, lessons: Any) -> dict[str, Any]:
+    lesson_ids, module_ids = _published_content_ids(lessons)
+    attempts = assessments.list_attempts(student_ids=student_ids)
+    return build_analytics(
+        period=period,
+        student_ids=student_ids,
+        attempts=attempts,
+        progress=progress,
+        published_lesson_ids=lesson_ids,
+        published_module_ids=module_ids,
+    )
+
+
+@router.get("/me/analytics", response_model=MyAnalyticsResponse)
+def my_analytics(period: AnalyticsPeriod = "30d", user=Depends(current_user), assessments: AssessmentRepository = Depends(get_assessment_repository), progress: ProgressRepository = Depends(get_progress_repository), lessons: LessonRepository = Depends(get_lesson_repository)):
+    payload = _scoped_analytics(period, [user["_id"]], assessments, progress, lessons)
+    return {"student_id": str(user["_id"]), "attempts_count": payload.pop("attempts_count"), **payload}
+
+
+@router.get("/educator/analytics/overview", response_model=AnalyticsOverviewResponse)
+def analytics_overview(period: AnalyticsPeriod = "30d", educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository), progress: ProgressRepository = Depends(get_progress_repository), lessons: LessonRepository = Depends(get_lesson_repository)):
+    student_ids = _educator_student_ids(educator_user, assessments, users)
+    payload = _scoped_analytics(period, student_ids, assessments, progress, lessons)
+    return {"students": len(student_ids), "assigned_students": len(student_ids), "attempts": payload.pop("attempts_count"), **payload}
 
 
 @router.get("/educator/analytics/students")
-def analytics_students(educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository)):
-    student_ids = assessments.students_for_trainer(educator_user["_id"]) if educator_user.get("role") == "trainer" else [user["_id"] for user in users.list_by_role("user")]
+def analytics_students(period: AnalyticsPeriod = "30d", educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository)):
+    student_ids = _educator_student_ids(educator_user, assessments, users)
     students = users.list_by_ids(student_ids)
+    cutoff = period_start(period)
     result = []
     for student in students:
-        attempts = [attempt for attempt in assessments.list_attempts(user_id=student["_id"]) if attempt.get("status") == "submitted"]
+        attempts = [attempt for attempt in assessments.list_attempts(user_id=student["_id"]) if attempt.get("status") == "submitted" and in_period(attempt.get("submitted_at"), cutoff)]
         scores = [float(attempt.get("score", 0)) for attempt in attempts]
         assignment = assessments.assignment_for_student(student["_id"])
         result.append({"id": str(student["_id"]), "full_name": student.get("full_name") or student["email"], "email": student["email"], "attempts": len(attempts), "average_score": round(sum(scores) / len(scores), 1) if scores else 0, "trainer_id": str(assignment["trainer_id"]) if assignment else None})
@@ -245,18 +277,14 @@ def analytics_students(educator_user=Depends(educator), assessments: AssessmentR
 
 
 @router.get("/educator/analytics/students/{student_id}", response_model=StudentAnalyticsResponse)
-def student_analytics(student_id: str, educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository)):
+def student_analytics(student_id: str, period: AnalyticsPeriod = "30d", educator_user=Depends(educator), assessments: AssessmentRepository = Depends(get_assessment_repository), users: UserRepository = Depends(get_user_repository), progress: ProgressRepository = Depends(get_progress_repository), lessons: LessonRepository = Depends(get_lesson_repository)):
     parsed = parse_id(student_id)
     if educator_user.get("role") == "trainer" and parsed not in assessments.students_for_trainer(educator_user["_id"]):
         raise AuthorizationError
     student = users.find_by_id(parsed)
     if not student:
         raise NotFoundError
-    attempts = [attempt for attempt in assessments.list_attempts(user_id=parsed) if attempt.get("status") == "submitted"]
-    competency_counts: dict[str, int] = {}
-    for attempt in attempts:
-        for answer in attempt.get("answers", []):
-            if not answer.get("is_correct"):
-                competency = answer.get("competency", "Sin clasificar")
-                competency_counts[competency] = competency_counts.get(competency, 0) + 1
-    return {"student_id": str(student["_id"]), "student_name": student.get("full_name") or student["email"], "trainer_id": (assessments.assignment_for_student(parsed) or {}).get("trainer_id"), "attempts": [{"id": str(attempt["_id"]), "assessment_id": str(attempt["assessment_id"]), "attempt_number": attempt["attempt_number"], "cycle": attempt["cycle"], "score": attempt.get("score", 0), "passed": bool(attempt.get("passed")), "submitted_at": attempt["submitted_at"]} for attempt in attempts], "failed_competencies": [{"competency": key, "count": value} for key, value in sorted(competency_counts.items(), key=lambda item: item[1], reverse=True)]}
+    payload = _scoped_analytics(period, [parsed], assessments, progress, lessons)
+    cutoff = period_start(period)
+    attempts = [attempt for attempt in assessments.list_attempts(user_id=parsed) if attempt.get("status") == "submitted" and in_period(attempt.get("submitted_at"), cutoff)]
+    return {"student_id": str(student["_id"]), "student_name": student.get("full_name") or student["email"], "trainer_id": str((assessments.assignment_for_student(parsed) or {}).get("trainer_id")) if (assessments.assignment_for_student(parsed) or {}).get("trainer_id") else None, "attempts": [{"id": str(attempt["_id"]), "assessment_id": str(attempt["assessment_id"]), "attempt_number": attempt["attempt_number"], "cycle": attempt["cycle"], "score": attempt.get("score", 0), "passed": bool(attempt.get("passed")), "submitted_at": attempt["submitted_at"]} for attempt in attempts], **{key: value for key, value in payload.items() if key != "attempts_count"}}
