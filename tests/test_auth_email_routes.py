@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from bson import ObjectId
 
-from app.core.exception import InvalidEmailActionTokenError
+from app.core.exception import EmailNotVerifiedError, InvalidEmailActionTokenError
 from app.repositories.user_repository import UserRepository
-from app.routes.auth_routes import register, resend_verification, verify_email
-from app.schemas.auth import EmailRequest, RegisterRequest
+from app.routes.auth_routes import login, register, resend_verification, verify_email, verify_email_code
+from app.schemas.auth import EmailRequest, LoginRequest, RegisterRequest, VerifyEmailCodeRequest
 from app.services.account_email_service import AccountEmailService
 
 
@@ -42,6 +42,13 @@ def test_register_returns_verification_contract_and_sends_email():
                 full_name="Alex Rivera",
                 email="PERSON@example.com",
                 password="strong-password",
+                academic_profile={
+                    "start_year": 2024,
+                    "group_name": "Grupo A",
+                    "campus_name": "Bucaramanga",
+                    "linkedin_url": None,
+                    "github_url": None,
+                },
             ),
             users=users,
             account_email=account_email,
@@ -73,6 +80,33 @@ def test_invalid_verification_token_is_exposed_as_client_error():
     assert caught.value.detail == "Invalid or expired email action token"
 
 
+def test_verify_email_code_delegates_email_and_code():
+    account_email = make_email_service()
+    response = verify_email_code(VerifyEmailCodeRequest(email="PERSON@example.com", code="123456"), account_email=account_email)
+
+    assert response == {"message": "Email verificado correctamente."}
+    account_email.verify_email_code.assert_called_once_with("PERSON@example.com", "123456")
+
+
+def test_unverified_login_requests_a_new_code_without_creating_a_session(monkeypatch):
+    account_email = make_email_service()
+    controller = Mock(side_effect=EmailNotVerifiedError)
+    monkeypatch.setattr("app.routes.auth_routes.login_controller", controller)
+
+    with pytest.raises(EmailNotVerifiedError):
+        asyncio.run(
+            login(
+                LoginRequest(email="PERSON@example.com", password="strong-password"),
+                response=Mock(),
+                users=Mock(spec=UserRepository),
+                refresh_tokens=Mock(),
+                account_email=account_email,
+            )
+        )
+
+    account_email.resend_verification.assert_awaited_once_with("PERSON@example.com")
+
+
 def test_resend_verification_is_accepted_without_disclosing_account_state():
     account_email = make_email_service()
     response = asyncio.run(
@@ -82,5 +116,5 @@ def test_resend_verification_is_accepted_without_disclosing_account_state():
         )
     )
 
-    assert response == {"message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace."}
+    assert response == {"message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace y código."}
     account_email.resend_verification.assert_awaited_once_with("PERSON@example.com")

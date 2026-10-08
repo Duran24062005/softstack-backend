@@ -22,6 +22,15 @@ from app.services.auth_service import authenticate, register_user
 from app.core.security import hash_password
 
 
+VALID_ACADEMIC_PROFILE = {
+    "start_year": 2024,
+    "group_name": "Grupo A",
+    "campus_name": "Bucaramanga",
+    "linkedin_url": None,
+    "github_url": None,
+}
+
+
 def make_user(*, role: str = "user", status: str = "active", verified: bool = True) -> dict:
     return {
         "_id": ObjectId(),
@@ -41,7 +50,7 @@ def test_registration_starts_pending_but_allowlisted_admin_is_active(monkeypatch
     users.create.side_effect = lambda document: {**document, "_id": ObjectId()}
     monkeypatch.setitem(security_config, "ADMIN_EMAILS", ["admin@example.com"])
 
-    student = register_user(users, "student@example.com", "strong-password")
+    student = register_user(users, "student@example.com", "strong-password", academic_profile=VALID_ACADEMIC_PROFILE)
     student_document = users.create.call_args.args[0]
     assert student["account_status"] == "pending"
     assert student["is_active"] is False

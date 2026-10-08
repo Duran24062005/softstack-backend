@@ -1,12 +1,14 @@
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 
-from app.core.exception import NotFoundError
+from app.core.exception import AuthorizationError, NotFoundError
 from app.models.auth import AccountStatus, UserRole, admin_user
 from app.repositories.user_repository import UserRepository
 from app.routes.dependencies import get_user_repository
 from app.middlewares.role_middleware import require_roles
 from app.schemas.auth import AdminUserResponse, AccountStatusUpdateRequest
+from app.schemas.student_profile import AcademicProfileInput, AcademicProfileResponse
+from app.services.student_profile_service import get_academic_profile, save_admin_academic_profile
 from app.services.account_status_service import update_account_status
 
 
@@ -34,3 +36,36 @@ def change_user_status(
     if not ObjectId.is_valid(user_id):
         raise NotFoundError
     return update_account_status(users, ObjectId(user_id), payload.account_status, admin_user_context)
+
+
+@router.get("/admin/students/{student_id}/academic-profile", response_model=AcademicProfileResponse | None)
+def get_student_academic_profile(
+    student_id: str,
+    _: dict = Depends(admin),
+    users: UserRepository = Depends(get_user_repository),
+):
+    if not ObjectId.is_valid(student_id):
+        raise NotFoundError
+    student = users.find_by_id(ObjectId(student_id))
+    if not student:
+        raise NotFoundError
+    if student.get("role") != UserRole.USER.value:
+        raise AuthorizationError
+    return get_academic_profile(student)
+
+
+@router.put("/admin/students/{student_id}/academic-profile", response_model=AcademicProfileResponse)
+def update_student_academic_profile(
+    student_id: str,
+    payload: AcademicProfileInput,
+    _: dict = Depends(admin),
+    users: UserRepository = Depends(get_user_repository),
+):
+    if not ObjectId.is_valid(student_id):
+        raise NotFoundError
+    student = users.find_by_id(ObjectId(student_id))
+    if not student:
+        raise NotFoundError
+    if student.get("role") != UserRole.USER.value:
+        raise AuthorizationError
+    return save_admin_academic_profile(users, student, payload)

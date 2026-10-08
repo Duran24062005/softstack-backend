@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 class ApplicationError(Exception):
     status_code = 500
     detail = "Internal application error"
+    code: str | None = None
 
 
 class AuthenticationError(ApplicationError):
@@ -55,6 +56,7 @@ class InvalidAccountStatusTransitionError(ApplicationError):
 class EmailNotVerifiedError(ApplicationError):
     status_code = 403
     detail = "Email address must be verified before signing in"
+    code = "EMAIL_NOT_VERIFIED"
 
 
 class InvalidEmailActionTokenError(ApplicationError):
@@ -70,6 +72,11 @@ class NotImplementedApplicationError(ApplicationError):
 class InvalidProfilePhotoError(ApplicationError):
     status_code = 400
     detail = "Invalid profile photo"
+
+
+class InvalidStudentAcademicProfileError(ApplicationError):
+    status_code = 422
+    detail = "La información académica del estudiante es obligatoria y válida"
 
 
 class BlobStorageUnavailableError(ApplicationError):
@@ -120,4 +127,7 @@ class AIProviderUnavailableError(ApplicationError):
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApplicationError)
     async def application_error_handler(_: Request, error: ApplicationError) -> JSONResponse:
-        return JSONResponse(status_code=error.status_code, content={"detail": error.detail})
+        content = {"detail": error.detail}
+        if error.code:
+            content["code"] = error.code
+        return JSONResponse(status_code=error.status_code, content=content)

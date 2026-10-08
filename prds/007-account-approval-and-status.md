@@ -24,6 +24,11 @@ Verificar el email solo cambia `email_verified`; nunca aprueba la cuenta.
 Después de verificarlo, el usuario debe esperar que un administrador lo pase a
 `active`.
 
+Si una cuenta no verificada intenta iniciar sesión con la contraseña correcta,
+el backend genera un nuevo enlace y código de confirmación y responde con
+`EMAIL_NOT_VERIFIED`. Este reintento no cambia el estado de aprobación ni crea
+cookies de sesión.
+
 ## Transiciones administrativas
 
 ```text
@@ -79,3 +84,7 @@ repetirse sin duplicar ni sobrescribir decisiones posteriores.
 - Eliminación de cuentas rechazadas.
 - Historial separado de eventos administrativos; la primera versión conserva
   el último actor y momento del cambio en `users`.
+
+El perfil académico de estudiantes se documenta por separado en
+[`008-student-academic-profile.md`](./008-student-academic-profile.md). Su
+captura no modifica las transiciones ni los permisos de aprobación de cuentas.

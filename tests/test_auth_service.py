@@ -11,11 +11,20 @@ from app.services.auth_service import AuthenticationError, authenticate, registe
 from app.core.security import decode_access_token, hash_token
 
 
+VALID_ACADEMIC_PROFILE = {
+    "start_year": 2024,
+    "group_name": "Grupo A",
+    "campus_name": "Bucaramanga",
+    "linkedin_url": None,
+    "github_url": "https://github.com/student",
+}
+
+
 def test_register_hashes_password_and_assigns_user_role():
     users = Mock(spec=UserRepository)
     users.create.side_effect = lambda document: {**document, "_id": "user-1"}
 
-    result = register_user(users, "Person@Example.com", "strong-password")
+    result = register_user(users, "Person@Example.com", "strong-password", academic_profile=VALID_ACADEMIC_PROFILE)
 
     created = users.create.call_args.args[0]
     assert result["email"] == "person@example.com"
@@ -28,7 +37,7 @@ def test_login_returns_tokens_and_persists_only_refresh_hash():
     users = Mock(spec=UserRepository)
     refresh_tokens = Mock(spec=RefreshTokenRepository)
     users.create.side_effect = lambda document: {**document, "_id": "user-1"}
-    registered = register_user(users, "person@example.com", "strong-password")
+    registered = register_user(users, "person@example.com", "strong-password", academic_profile=VALID_ACADEMIC_PROFILE)
     user = {"_id": "user-1", "email": registered["email"], "password_hash": users.create.call_args.args[0]["password_hash"], "role": "user", "is_active": True, "created_at": datetime.now(timezone.utc)}
     users.find_by_email.return_value = user
 

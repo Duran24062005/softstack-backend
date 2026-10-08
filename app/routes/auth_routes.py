@@ -10,16 +10,20 @@ from app.controllers.auth_controller import (
 )
 from app.config.config import cookie_config
 from app.core.cookies import clear_auth_cookies, set_auth_cookies
-from app.core.exception import InvalidTokenError
+from app.core.exception import EmailNotVerifiedError, InvalidTokenError
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.routes.dependencies import current_user, get_account_email_service, get_blob_storage, get_refresh_token_repository, get_user_repository
-from app.schemas.auth import AuthResponse, EmailRequest, LoginRequest, ProfileUpdateRequest, RegisterRequest, ResetPasswordRequest, UserResponse
+from app.schemas.auth import AuthResponse, EmailRequest, LoginRequest, ProfileUpdateRequest, RegisterRequest, ResetPasswordRequest, UserResponse, VerifyEmailCodeRequest
+from app.schemas.student_profile import AcademicProfileInput, AcademicProfileResponse
 from app.services.account_email_service import AccountEmailService
+from app.services.student_profile_service import get_academic_profile, save_academic_profile
+from app.middlewares.role_middleware import require_roles
 from app.services.blob_storage import VercelBlobStorage
 from app.services.profile_photo_service import ProfilePhotoService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+student = require_roles("user")
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -28,7 +32,7 @@ async def register(
     users: UserRepository = Depends(get_user_repository),
     account_email: AccountEmailService = Depends(get_account_email_service),
 ):
-    registered = register_user_controller(users, payload.email, payload.password, payload.full_name)
+    registered = register_user_controller(users, payload.email, payload.password, payload.full_name, payload.academic_profile.model_dump(mode="json") if payload.academic_profile else None)
     user = users.find_by_email(str(payload.email).lower())
     if user:
         await account_email.send_verification(user)
@@ -41,13 +45,20 @@ async def register(
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(
+async def login(
     payload: LoginRequest,
     response: Response,
     users: UserRepository = Depends(get_user_repository),
     refresh_tokens: RefreshTokenRepository = Depends(get_refresh_token_repository),
+    account_email: AccountEmailService = Depends(get_account_email_service),
 ):
-    session = login_controller(users, refresh_tokens, payload.email, payload.password)
+    try:
+        session = login_controller(users, refresh_tokens, payload.email, payload.password)
+    except EmailNotVerifiedError:
+        # The password was correct, so the user can recover even when the
+        # original registration email was never delivered.
+        await account_email.resend_verification(str(payload.email))
+        raise
     set_auth_cookies(response, session["access_token"], session["refresh_token"])
     return {"expires_in": session["expires_in"], "user": session["user"]}
 
@@ -78,10 +89,16 @@ def verify_email(token: str, account_email: AccountEmailService = Depends(get_ac
     return {"message": "Email verificado correctamente."}
 
 
+@router.post("/verify-email-code")
+def verify_email_code(payload: VerifyEmailCodeRequest, account_email: AccountEmailService = Depends(get_account_email_service)):
+    account_email.verify_email_code(str(payload.email), payload.code)
+    return {"message": "Email verificado correctamente."}
+
+
 @router.post("/resend-verification", status_code=status.HTTP_202_ACCEPTED)
 async def resend_verification(payload: EmailRequest, account_email: AccountEmailService = Depends(get_account_email_service)):
     await account_email.resend_verification(str(payload.email))
-    return {"message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace."}
+    return {"message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace y código."}
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
@@ -104,6 +121,16 @@ def me(user=Depends(current_user)):
 @router.patch("/me", response_model=UserResponse)
 def update_me(payload: ProfileUpdateRequest, user=Depends(current_user), users: UserRepository = Depends(get_user_repository)):
     return update_profile_controller(users, user, payload)
+
+
+@router.get("/me/academic-profile", response_model=AcademicProfileResponse | None)
+def get_my_academic_profile(user=Depends(student)):
+    return get_academic_profile(user)
+
+
+@router.put("/me/academic-profile", response_model=AcademicProfileResponse)
+def update_my_academic_profile(payload: AcademicProfileInput, user=Depends(student), users: UserRepository = Depends(get_user_repository)):
+    return save_academic_profile(users, user, payload)
 
 
 @router.post("/me/profile-photo", response_model=UserResponse)

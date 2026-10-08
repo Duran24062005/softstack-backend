@@ -61,6 +61,22 @@ Las cuentas normales se registran con `account_status=pending` e `is_active=fals
 
 La primera vertical funcional mantiene compatibilidad con Bearer, pero el cliente web usa una sesión de cookies HttpOnly (`softstack_access` y `softstack_refresh`). Registro y login crean la sesión; refresh rota el refresh token; logout lo revoca y limpia ambas cookies. El perfil admite `full_name`, email y cambio de contraseña protegido por la contraseña actual.
 
+### Perfil académico de estudiantes
+
+El registro público solicita un `academic_profile` a las cuentas con rol
+`user`. El perfil se conserva dentro del documento `users`, pero tiene contratos
+propios para no mezclar identidad con información académica:
+
+- `GET/PUT /auth/me/academic-profile` para el estudiante autenticado.
+- `GET/PUT /admin/students/{student_id}/academic-profile` para administradores.
+
+El bloque conserva `start_year`, un grupo, una sede y URLs opcionales de
+LinkedIn/GitHub. Los trainers creados por administración no reciben este
+requisito. Las cuentas existentes sin el bloque permanecen compatibles y pueden
+completarlo desde el dashboard. Los perfiles históricos con `memberships` se
+normalizan al leerlos tomando el grupo actual o el primero, y se convierten a
+la forma simple en el siguiente guardado.
+
 El contenido publicado vive en `modules` y `lessons`. El campo `lessons.content` contiene el documento JSON de Tiptap completo, mientras que `progress` registra la finalización por usuario y lección. Las rutas editoriales requieren `require_roles("admin", "trainer")`; las rutas de gestión de usuarios, asignaciones, configuración y reinicios requieren `require_roles("admin")`. El frontend obtiene acceso admin mediante `ADMIN_EMAILS` durante el registro.
 
 La gestión de cuentas vive en `/admin/users`. El backend devuelve roles y estados, valida las transiciones `pending → active/rejected`, `rejected → pending` y `active ↔ inactive`, y registra el último actor y momento del cambio en el documento de usuario.

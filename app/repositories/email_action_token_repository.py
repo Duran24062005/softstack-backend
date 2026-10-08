@@ -40,6 +40,9 @@ class EmailActionTokenRepository:
             sort=[("created_at", -1)],
         )
 
+    def find_active_by_user_and_purpose(self, user_id: Any, purpose: str) -> dict[str, Any] | None:
+        return self.find_active_for_user(user_id, purpose)
+
     def increment_attempts(self, token_id: Any) -> None:
         self.collection.update_one({"_id": token_id}, {"$inc": {"attempts": 1}})
 

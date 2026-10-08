@@ -1,12 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from app.models.auth import AccountStatus, UserRole
+from app.schemas.student_profile import AcademicProfileInput
 
 
 class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=80)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
+    academic_profile: AcademicProfileInput | None = None
 
 
 class LoginRequest(BaseModel):
@@ -22,6 +24,10 @@ class ResetPasswordRequest(BaseModel):
 
 class EmailRequest(BaseModel):
     email: EmailStr
+
+
+class VerifyEmailCodeRequest(EmailRequest):
+    code: str = Field(min_length=6, max_length=6, pattern=r"^[0-9]{6}$")
 
 
 class ProfileUpdateRequest(BaseModel):

@@ -15,6 +15,7 @@ from app.services.email_service import EmailServiceError, TransactionalEmailClie
 logger = logging.getLogger(__name__)
 
 EMAIL_VERIFICATION_PURPOSE = "email_verification"
+EMAIL_VERIFICATION_CODE_PURPOSE = "email_verification_code"
 PASSWORD_RESET_PURPOSE = "password_reset"
 
 
@@ -33,25 +34,33 @@ class AccountEmailService:
 
     async def send_verification(self, user: dict) -> None:
         raw_token = secrets.token_urlsafe(32)
+        code = f"{secrets.randbelow(1_000_000):06d}"
         self.action_tokens.invalidate_active(user["_id"], EMAIL_VERIFICATION_PURPOSE)
+        self.action_tokens.invalidate_active(user["_id"], EMAIL_VERIFICATION_CODE_PURPOSE)
         self.action_tokens.create(self._token_document(user["_id"], raw_token, EMAIL_VERIFICATION_PURPOSE, email_config["VERIFICATION_EXPIRE_MINUTES"]))
+        self.action_tokens.create(self._token_document(user["_id"], code, EMAIL_VERIFICATION_CODE_PURPOSE, email_config["VERIFICATION_CODE_EXPIRE_MINUTES"], attempts=0))
         verify_url = f"{email_config['FRONTEND_URL']}/verify-email?token={quote(raw_token)}"
         try:
             await self.email_client.send(
                 recipient=user["email"],
                 subject="Confirma tu cuenta de SoftStack",
-                body=f"Hola {user['full_name'] or user['email']}, confirma tu cuenta aquí: {verify_url}",
+                body=(
+                    f"Hola {user['full_name'] or user['email']}, confirma tu cuenta aquí: {verify_url} "
+                    f"o escribe el código {code}. El código caduca en {email_config['VERIFICATION_CODE_EXPIRE_MINUTES']} minutos."
+                ),
                 html_body=(
                     f"<p>Hola {user['full_name'] or user['email']},</p>"
                     f"<p>Confirma tu cuenta de SoftStack haciendo clic en este enlace:</p>"
                     f"<p><a href=\"{verify_url}\">Confirmar mi cuenta</a></p>"
+                    f"<p>Si el enlace no funciona, escribe este código:</p>"
+                    f"<p style=\"font-size: 28px; letter-spacing: 6px; font-weight: 700;\">{code}</p>"
                 ),
             )
         except EmailServiceError:
             logger.exception("Verification email could not be delivered", extra={"user_id": str(user["_id"])})
 
     async def resend_verification(self, email: str) -> None:
-        user = self.users.find_by_email(email.lower())
+        user = self.users.find_by_email(self._normalize_email(email))
         if user and effective_account_status(user) in {AccountStatus.PENDING, AccountStatus.ACTIVE} and not user.get("email_verified", True):
             await self.send_verification(user)
 
@@ -63,9 +72,26 @@ class AccountEmailService:
         if not updated:
             raise InvalidEmailActionTokenError
         self.action_tokens.consume(record["_id"])
+        self.action_tokens.invalidate_active(record["user_id"], EMAIL_VERIFICATION_CODE_PURPOSE)
+
+    def verify_email_code(self, email: str, code: str) -> None:
+        user = self.users.find_by_email(self._normalize_email(email))
+        record = user and self.action_tokens.find_active_by_user_and_purpose(user["_id"], EMAIL_VERIFICATION_CODE_PURPOSE)
+        if not user or not record or record.get("attempts", 0) >= email_config["VERIFICATION_MAX_ATTEMPTS"]:
+            raise InvalidEmailActionTokenError
+
+        if not secrets.compare_digest(record["token_hash"], hash_token(code.strip())):
+            self.action_tokens.increment_attempts(record["_id"])
+            raise InvalidEmailActionTokenError
+
+        updated = self.users.mark_email_verified(user["_id"])
+        if not updated:
+            raise InvalidEmailActionTokenError
+        self.action_tokens.consume(record["_id"])
+        self.action_tokens.invalidate_active(user["_id"], EMAIL_VERIFICATION_PURPOSE)
 
     async def request_password_reset(self, email: str) -> None:
-        user = self.users.find_by_email(email.lower())
+        user = self.users.find_by_email(self._normalize_email(email))
         if not user or effective_account_status(user) != AccountStatus.ACTIVE:
             return
 
@@ -87,12 +113,12 @@ class AccountEmailService:
             logger.exception("Password reset email could not be delivered", extra={"user_id": str(user["_id"])})
 
     def reset_password(self, email: str, code: str, new_password: str) -> None:
-        user = self.users.find_by_email(email.lower())
+        user = self.users.find_by_email(self._normalize_email(email))
         record = user and self.action_tokens.find_active_for_user(user["_id"], PASSWORD_RESET_PURPOSE)
         if not user or not record or record.get("attempts", 0) >= email_config["RESET_MAX_ATTEMPTS"]:
             raise InvalidEmailActionTokenError
 
-        if not secrets.compare_digest(record["token_hash"], hash_token(code)):
+        if not secrets.compare_digest(record["token_hash"], hash_token(code.strip())):
             self.action_tokens.increment_attempts(record["_id"])
             raise InvalidEmailActionTokenError
 
@@ -101,6 +127,10 @@ class AccountEmailService:
             raise InvalidEmailActionTokenError
         self.action_tokens.consume(record["_id"])
         self.refresh_tokens.revoke_for_user(user["_id"])
+
+    @staticmethod
+    def _normalize_email(email: str) -> str:
+        return email.strip().lower()
 
     @staticmethod
     def _token_document(user_id, raw_token: str, purpose: str, expires_minutes: int, *, attempts: int = 0) -> dict:

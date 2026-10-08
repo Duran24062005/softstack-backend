@@ -26,6 +26,7 @@ class User(BaseModel):
     email: EmailStr
     password_hash: str
     profile_photo: dict[str, Any] | None = None
+    academic_profile: dict[str, Any] | None = None
     role: UserRole = UserRole.USER
     is_active: bool = True
     account_status: AccountStatus = AccountStatus.ACTIVE

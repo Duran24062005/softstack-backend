@@ -6,7 +6,7 @@ SoftStack actualmente registra usuarios y permite iniciar sesión sin comprobar 
 
 El objetivo es que:
 
-- cada registro genere un enlace de confirmación;
+- cada registro genere un enlace y un código de confirmación;
 - las cuentas no confirmadas no puedan iniciar sesión;
 - un usuario pueda solicitar un código temporal para recuperar su contraseña;
 - el código sea de un solo uso, tenga expiración y nunca se almacene en texto plano;
@@ -18,7 +18,10 @@ El objetivo es que:
 
 - Estado `email_verified` en `users`, con valor inicial `false` para usuarios nuevos.
 - Token aleatorio de confirmación con expiración configurable.
+- Código numérico de seis dígitos para recuperar la confirmación cuando el
+  enlace original no llegó.
 - `GET /auth/verify-email?token=...` para confirmar la cuenta.
+- `POST /auth/verify-email-code` para confirmar la cuenta con email y código.
 - `POST /auth/resend-verification` para reenviar confirmación con respuesta genérica.
 - `POST /auth/forgot-password` para solicitar un código de recuperación.
 - `POST /auth/reset-password` para validar el código y cambiar la contraseña.
@@ -39,7 +42,7 @@ El objetivo es que:
 
 ## Actores
 
-- Usuario no confirmado: puede registrarse y solicitar reenvío, pero no iniciar sesión.
+- Usuario no confirmado: puede registrarse y solicitar reenvío, pero no iniciar sesión. Si proporciona la contraseña correcta, el login emite otro código y responde `EMAIL_NOT_VERIFIED`; el frontend muestra el campo para introducirlo.
 - Usuario confirmado: puede iniciar recuperación y cambiar su contraseña con un código válido.
 - Servicio SoftStack: crea, consume y revoca tokens; mantiene la identidad y las reglas de autenticación.
 - Proveedor externo: recibe un mensaje transaccional autenticado y lo entrega mediante su infraestructura de correo.
@@ -48,12 +51,21 @@ El objetivo es que:
 
 1. `POST /auth/register` valida email, nombre y contraseña.
 2. SoftStack crea el usuario con `email_verified=false`.
-3. Genera un token aleatorio, almacena únicamente su hash y calcula su expiración.
-4. Envía un enlace al frontend mediante el proveedor de correo.
+3. Genera un token aleatorio y un código de seis dígitos, almacena únicamente sus hashes y calcula sus expiraciones.
+4. Envía el enlace y el código mediante el proveedor de correo.
 5. La respuesta indica `verification_required=true` y no crea cookies de sesión.
 6. El usuario abre `/verify-email?token=...` en el frontend.
 7. El frontend llama a `GET /auth/verify-email?token=...` por el BFF.
 8. SoftStack valida hash, propósito, expiración y consumo; después marca `email_verified=true`.
+
+También puede enviar `{email, code}` a `POST /auth/verify-email-code`. El código
+se invalida después de cinco intentos incorrectos (configurable) y al confirmar
+se invalidan los enlaces/códigos alternativos activos.
+
+El servicio normaliza espacios exteriores y mayúsculas del email, y espacios
+exteriores del código antes de consultar o comparar. Esto evita que una copia
+del código desde el correo falle por formato sin relajar la validación de seis
+dígitos del contrato HTTP.
 
 Si falla el proveedor durante el registro, el usuario permanece creado pero no confirmado. El endpoint de reenvío permite recuperar el flujo sin revelar si el email existe.
 
@@ -111,7 +123,7 @@ Respuesta `201`:
 Respuesta `202` siempre:
 
 ```json
-{ "message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace." }
+{ "message": "Si la cuenta puede recibir un correo, enviaremos un nuevo enlace y código." }
 ```
 
 ### Solicitud de recuperación
@@ -149,7 +161,7 @@ Respuesta `202` siempre, sin confirmar si la cuenta existe.
 `email_action_tokens` almacena:
 
 - `user_id`;
-- `purpose`: `email_verification` o `password_reset`;
+- `purpose`: `email_verification`, `email_verification_code` o `password_reset`;
 - `token_hash` SHA-256;
 - `expires_at` con índice TTL;
 - `created_at`;
@@ -175,7 +187,7 @@ El `user_id` del proveedor identifica un remitente dentro de su propia base y no
 
 - El login rechaza usuarios con `email_verified=false`.
 - Las respuestas de forgot/resend son indistinguibles para emails existentes y no existentes.
-- Los códigos de recuperación son de seis dígitos, expiran rápido y permiten un número limitado de intentos.
+- Los códigos de recuperación y verificación son de seis dígitos, expiran rápido y permiten un número limitado de intentos.
 - Se invalida el token anterior del mismo propósito al emitir uno nuevo.
 - Se revocan sesiones refresh después de un cambio de contraseña.
 - La clave del proveedor de correo vive solo en variables de entorno; nunca se envía al frontend.

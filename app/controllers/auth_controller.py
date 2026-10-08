@@ -17,9 +17,9 @@ from app.services.auth_service import authenticate, register_user, refresh_sessi
 from app.services.account_status_service import ensure_active_account
 
 
-def register_user_controller(users: UserRepository, email: str, password: str, full_name: str):
+def register_user_controller(users: UserRepository, email: str, password: str, full_name: str, academic_profile=None):
     try:
-        return register_user(users, email, password, full_name)
+        return register_user(users, email, password, full_name, academic_profile)
     except ConflictError:
         raise
 
