@@ -95,6 +95,22 @@ def test_resend_verification_normalizes_email_and_skips_verified_accounts():
     assert client.messages == []
 
 
+def test_resend_verification_is_available_for_pending_accounts():
+    service, users, _, _, client = make_service()
+    users.find_by_email.return_value = {
+        "_id": "user-1",
+        "email": "person@example.com",
+        "full_name": "Alex",
+        "is_active": False,
+        "account_status": "pending",
+        "email_verified": False,
+    }
+
+    asyncio.run(service.resend_verification("person@example.com"))
+
+    assert len(client.messages) == 1
+
+
 def test_reset_password_consumes_code_and_revokes_sessions():
     service, users, action_tokens, refresh_tokens, client = make_service()
     user_id = "user-1"
