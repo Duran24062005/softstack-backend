@@ -1,4 +1,5 @@
-from scripts.seed_content import MODULES
+from app.schemas.instructional import InstructionalPlan
+from scripts.seed_content import MODULES, _lesson_plan, _module_plan
 
 
 def test_seed_contains_the_five_employability_modules_in_order():
@@ -38,3 +39,12 @@ def test_seed_covers_the_requested_topics():
         "Investigación de Mercado y Aspiración Salarial",
         "Etiqueta Pos-Entrevista y Seguimiento",
     } <= lesson_titles
+
+
+def test_seed_contains_valid_instructional_plans_for_modules_and_lessons():
+    for module in MODULES:
+        InstructionalPlan.model_validate(_module_plan(module))
+        for lesson in module["lessons"]:
+            InstructionalPlan.model_validate(
+                _lesson_plan(lesson["title"], lesson["description"], lesson["sections"], lesson["estimated_minutes"])
+            )
