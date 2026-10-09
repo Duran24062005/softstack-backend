@@ -8,6 +8,55 @@ from app.config.database.mongodb_connection import create_mongodb_client, initia
 from app.services.content_service import slugify
 
 
+def _lesson_plan(title: str, description: str, sections: list[tuple[str, list[str]]], estimated_minutes: int) -> dict[str, Any]:
+    return {
+        "central_topic": title,
+        "learning_objectives": [description],
+        "concept_map": {
+            "label": title,
+            "children": [{"label": heading, "children": []} for heading, _ in sections],
+        },
+        "ordering_strategy": "simple_to_complex",
+        "ordering_rationale": "La lección parte del contexto, continúa con criterios concretos y termina en una acción aplicable.",
+        "recommended_formats": ["text", "activity"],
+        "session_plan": [
+            {"title": "Comprender", "minutes": max(1, estimated_minutes // 2), "activity": "Relaciona el concepto con una situación profesional cercana.", "format": "text"},
+            {"title": "Aplicar", "minutes": max(1, estimated_minutes - max(1, estimated_minutes // 2)), "activity": "Convierte lo aprendido en una evidencia breve y revisable.", "format": "activity"},
+        ],
+        "lesson_sequence": [],
+    }
+
+
+def _module_plan(module_data: dict[str, Any]) -> dict[str, Any]:
+    lessons = module_data["lessons"]
+    return {
+        "central_topic": module_data["title"],
+        "learning_objectives": [module_data["description"]],
+        "concept_map": {
+            "label": module_data["title"],
+            "children": [{"label": lesson["title"], "children": []} for lesson in lessons],
+        },
+        "ordering_strategy": "simple_to_complex",
+        "ordering_rationale": "La ruta ordena las lecciones desde los fundamentos visibles hasta la práctica profesional verificable.",
+        "recommended_formats": ["text", "activity"],
+        "session_plan": [
+            {"title": "Diagnóstico", "minutes": 10, "activity": "Identifica la señal profesional que quieres fortalecer.", "format": "activity"},
+            {"title": "Ruta guiada", "minutes": sum(lesson["estimated_minutes"] for lesson in lessons), "activity": "Recorre las lecciones y conserva las evidencias construidas.", "format": "text"},
+        ],
+        "lesson_sequence": [
+            {
+                "key": slugify(lesson["title"])[:40].rstrip("-"),
+                "title": lesson["title"],
+                "description": lesson["description"],
+                "objective": lesson["description"],
+                "estimated_minutes": lesson["estimated_minutes"],
+                "recommended_formats": ["text", "activity"],
+            }
+            for lesson in lessons
+        ],
+    }
+
+
 def _lesson(
     title: str,
     description: str,
@@ -32,6 +81,7 @@ def _lesson(
     return {
         "title": title,
         "description": description,
+        "sections": sections,
         "estimated_minutes": estimated_minutes,
         "content": {"type": "doc", "content": content},
     }
@@ -354,6 +404,7 @@ def _upsert_module(database, module_data: dict[str, Any], now: datetime) -> dict
         "description": module_data["description"],
         "order": module_data["order"],
         "status": "published",
+        "instructional_plan": _module_plan(module_data),
         "updated_at": now,
     }
     if existing:
@@ -395,6 +446,12 @@ def _upsert_lesson(
         "order": order,
         "status": "published",
         "estimated_minutes": lesson_data["estimated_minutes"],
+        "instructional_plan": _lesson_plan(
+            lesson_data["title"],
+            lesson_data["description"],
+            lesson_data.get("sections", []),
+            lesson_data["estimated_minutes"],
+        ),
         "updated_by": None,
         "updated_at": now,
     }
@@ -412,16 +469,23 @@ def _upsert_lesson(
     )
 
 
-def seed() -> None:
-    client = create_mongodb_client()
-    database = client[database_config["MONGODB_DATABASE"]]
+def seed_database(database, now: datetime | None = None) -> list[dict[str, Any]]:
     initialize_indexes(database)
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
+    modules: list[dict[str, Any]] = []
     for index, module_data in enumerate(MODULES, start=1):
         module_data["order"] = index
         module = _upsert_module(database, module_data, now)
+        modules.append(module)
         for lesson_order, lesson_data in enumerate(module_data["lessons"], start=1):
             _upsert_lesson(database, module["_id"], module_data, lesson_data, lesson_order, now)
+    return [database.modules.find_one({"_id": module["_id"]}) for module in modules]
+
+
+def seed() -> None:
+    client = create_mongodb_client()
+    database = client[database_config["MONGODB_DATABASE"]]
+    seed_database(database)
     client.close()
 
 
