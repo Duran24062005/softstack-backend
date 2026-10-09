@@ -110,9 +110,11 @@ cron_config = {
 
 ai_config = {
     "PROVIDER": os.getenv("AI_QUESTION_PROVIDER", "deepseek").lower(),
+    "CONTENT_PROVIDER": os.getenv("AI_CONTENT_PROVIDER", os.getenv("AI_QUESTION_PROVIDER", "deepseek")).lower(),
     "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY", ""),
     "DEEPSEEK_BASE_URL": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/"),
     "DEEPSEEK_MODEL": os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
+    "DEEPSEEK_CONTENT_MODEL": os.getenv("DEEPSEEK_CONTENT_MODEL", os.getenv("DEEPSEEK_MODEL", "deepseek-flash")),
     "DEEPSEEK_TIMEOUT_SECONDS": _env_int("DEEPSEEK_TIMEOUT_SECONDS", 30),
 }
 

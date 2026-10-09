@@ -48,6 +48,7 @@ def initialize_indexes(database: Database) -> None:
     database.trainer_assignments.create_index("student_id", unique=True)
     database.trainer_assignments.create_index("trainer_id")
     database.assessment_settings.create_index("key", unique=True)
+    database.content_revisions.create_index([("target_type", ASCENDING), ("target_id", ASCENDING), ("status", ASCENDING)])
 
 
 def close_mongodb_client(request: Request) -> None:

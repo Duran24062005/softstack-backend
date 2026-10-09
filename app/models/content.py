@@ -6,6 +6,7 @@ from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.content_media import MediaReference
+from app.schemas.instructional import InstructionalPlan
 
 
 class ContentStatus(str, Enum):
@@ -28,6 +29,7 @@ class LearningModule(BaseModel):
     order: int = 0
     status: ContentStatus = ContentStatus.DRAFT
     cover_media: MediaReference | None = None
+    instructional_plan: InstructionalPlan | None = None
     media_assets: list[MediaReference] = Field(default_factory=list)
     created_by: ObjectId
     created_at: datetime
@@ -42,6 +44,7 @@ class Lesson(BaseModel):
     slug: str
     description: str
     content: TiptapDocument = Field(default_factory=TiptapDocument)
+    instructional_plan: InstructionalPlan | None = None
     media_assets: list[MediaReference] = Field(default_factory=list)
     order: int = 0
     status: ContentStatus = ContentStatus.DRAFT
@@ -61,6 +64,7 @@ def public_module(document: dict[str, Any]) -> dict[str, Any]:
         "order": document.get("order", 0),
         "status": document.get("status", ContentStatus.DRAFT.value),
         "cover_media": document.get("cover_media"),
+        "instructional_plan": document.get("instructional_plan"),
         "created_at": document["created_at"],
         "updated_at": document["updated_at"],
     }
@@ -76,6 +80,7 @@ def public_lesson(document: dict[str, Any], include_content: bool = True) -> dic
         "order": document.get("order", 0),
         "status": document.get("status", ContentStatus.DRAFT.value),
         "estimated_minutes": document.get("estimated_minutes", 10),
+        "instructional_plan": document.get("instructional_plan"),
         "created_at": document["created_at"],
         "updated_at": document["updated_at"],
     }

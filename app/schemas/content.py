@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.models.content import ContentStatus
 from app.schemas.content_media import MediaReference
+from app.schemas.instructional import InstructionalPlan
 
 
 class TiptapDocumentRequest(BaseModel):
@@ -18,6 +19,7 @@ class ModuleCreateRequest(BaseModel):
     order: int = Field(default=0, ge=0)
     status: ContentStatus = ContentStatus.DRAFT
     cover_media: MediaReference | None = None
+    instructional_plan: InstructionalPlan | None = None
 
 
 class ModuleUpdateRequest(BaseModel):
@@ -26,6 +28,7 @@ class ModuleUpdateRequest(BaseModel):
     order: int | None = Field(default=None, ge=0)
     status: ContentStatus | None = None
     cover_media: MediaReference | None = None
+    instructional_plan: InstructionalPlan | None = None
 
 
 class ModuleResponse(BaseModel):
@@ -36,6 +39,7 @@ class ModuleResponse(BaseModel):
     order: int
     status: ContentStatus
     cover_media: MediaReference | None = None
+    instructional_plan: InstructionalPlan | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -47,6 +51,7 @@ class LessonCreateRequest(BaseModel):
     order: int = Field(default=0, ge=0)
     status: ContentStatus = ContentStatus.DRAFT
     estimated_minutes: int = Field(default=10, ge=1, le=240)
+    instructional_plan: InstructionalPlan | None = None
 
 
 class LessonUpdateRequest(BaseModel):
@@ -56,6 +61,7 @@ class LessonUpdateRequest(BaseModel):
     order: int | None = Field(default=None, ge=0)
     status: ContentStatus | None = None
     estimated_minutes: int | None = Field(default=None, ge=1, le=240)
+    instructional_plan: InstructionalPlan | None = None
 
 
 class LessonResponse(BaseModel):
@@ -68,6 +74,7 @@ class LessonResponse(BaseModel):
     order: int
     status: ContentStatus
     estimated_minutes: int
+    instructional_plan: InstructionalPlan | None = None
     created_at: datetime
     updated_at: datetime
 

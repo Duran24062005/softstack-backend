@@ -91,6 +91,7 @@ async def create_module(modules: ModuleRepository, media_repository: ContentMedi
     cover_media = validate_cover_media(payload.cover_media)
     media_assets = [cover_media] if cover_media else []
     now = datetime.now(timezone.utc)
+    instructional_plan = getattr(payload, "instructional_plan", None)
     document = {
         "title": payload.title.strip(),
         "slug": slugify(payload.title),
@@ -98,6 +99,7 @@ async def create_module(modules: ModuleRepository, media_repository: ContentMedi
         "order": payload.order,
         "status": payload.status.value,
         "cover_media": cover_media,
+        "instructional_plan": instructional_plan.model_dump() if instructional_plan else None,
         "media_assets": media_assets,
         "created_by": user_object_id(user),
         "created_at": now,
@@ -157,12 +159,14 @@ async def create_lesson(modules: ModuleRepository, lessons: LessonRepository, me
     media_assets = collect_document_media(content)
     now = datetime.now(timezone.utc)
     current_id = user_object_id(user)
+    instructional_plan = getattr(payload, "instructional_plan", None)
     document = {
         "module_id": parsed_module,
         "title": payload.title.strip(),
         "slug": slugify(payload.title),
         "description": payload.description.strip(),
         "content": content,
+        "instructional_plan": instructional_plan.model_dump() if instructional_plan else None,
         "media_assets": media_assets,
         "order": payload.order,
         "status": payload.status.value,

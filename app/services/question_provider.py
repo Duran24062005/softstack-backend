@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from app.config.config import ai_config
 from app.core.exception import AIProviderUnavailableError
+from app.services.content_text import tiptap_to_text
 
 
 class GeneratedOption(BaseModel):
@@ -32,19 +33,6 @@ class GeneratedQuestion(BaseModel):
 
 class QuestionProvider(Protocol):
     async def generate(self, *, title: str, description: str, content: str, count: int) -> list[GeneratedQuestion]: ...
-
-
-def tiptap_to_text(value: Any) -> str:
-    parts: list[str] = []
-    if isinstance(value, dict):
-        if isinstance(value.get("text"), str):
-            parts.append(value["text"])
-        for child in value.get("content", []):
-            parts.append(tiptap_to_text(child))
-    elif isinstance(value, list):
-        for child in value:
-            parts.append(tiptap_to_text(child))
-    return " ".join(part.strip() for part in parts if part.strip())
 
 
 def _json_content(raw: str) -> str:

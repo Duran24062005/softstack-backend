@@ -104,6 +104,11 @@ class ContentMediaOperationError(ApplicationError):
     detail = "Could not process content media storage"
 
 
+class ContentRevisionConflictError(ApplicationError):
+    status_code = 409
+    detail = "El contenido cambió mientras se preparaba la sugerencia; vuelve a generarla"
+
+
 class AssessmentUnavailableError(ApplicationError):
     status_code = 409
     detail = "This assessment is not ready for students"
@@ -121,7 +126,7 @@ class InvalidAssessmentAnswerError(ApplicationError):
 
 class AIProviderUnavailableError(ApplicationError):
     status_code = 503
-    detail = "The question suggestion provider is unavailable"
+    detail = "El proveedor de sugerencias IA no está disponible"
 
 
 def register_exception_handlers(app: FastAPI) -> None:
