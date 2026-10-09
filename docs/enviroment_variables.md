@@ -107,14 +107,21 @@ Si un usuario ya existe como `user`, agregar su email a `ADMIN_EMAILS` no lo pro
 | Variable | Para qué sirve | Valor por defecto | Notas |
 | --- | --- | --- | --- |
 | `AI_QUESTION_PROVIDER` | Proveedor activo para sugerir preguntas. | `deepseek` | Es un selector detrás de `QuestionProvider`; no se usa desde el navegador. |
+| `AI_CONTENT_PROVIDER` | Proveedor activo para sugerencias de módulos y lecciones. | `deepseek` o el valor de `AI_QUESTION_PROVIDER` | Es un selector server-side detrás de `ContentSuggestionProvider`. Un valor desconocido deja la feature no disponible; no se acepta desde el cliente. |
 | `DEEPSEEK_API_KEY` | Credencial server-side para generar sugerencias. | Vacía | Nunca la expongas con `NEXT_PUBLIC_` ni la guardes en Git. |
 | `DEEPSEEK_BASE_URL` | URL base compatible con la API de DeepSeek. | `https://api.deepseek.com` | Permite sustituir el endpoint en pruebas o por otro proveedor compatible. |
 | `DEEPSEEK_MODEL` | Modelo utilizado por el adaptador inicial. | `deepseek-flash` | Cambiable sin modificar el contrato de preguntas. |
+| `DEEPSEEK_CONTENT_MODEL` | Modelo utilizado por `ContentSuggestionProvider`. | `DEEPSEEK_MODEL` | Permite separar el modelo de autoría del modelo de preguntas sin exponer una selección al navegador. |
 | `DEEPSEEK_TIMEOUT_SECONDS` | Tiempo máximo de una sugerencia. | `30` | Un fallo no guarda preguntas parciales. |
 | `ASSESSMENT_DEFAULT_PASSING_SCORE` | Umbral inicial de aprobación global. | `80` | El valor vigente se administra desde la API y MongoDB. |
 | `ASSESSMENT_DEFAULT_QUESTION_COUNT` | Número inicial de preguntas por evaluación. | `5` | Debe estar entre 3 y 5. |
 
 El proveedor recibe únicamente título, descripción y texto educativo anonimizado. Las preguntas se guardan como sugerencias y necesitan aprobación humana.
+
+Las sugerencias de contenido reutilizan `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL` y
+`DEEPSEEK_TIMEOUT_SECONDS`, pero permiten seleccionar `DEEPSEEK_CONTENT_MODEL`.
+El backend elimina emails y teléfonos antes de construir el prompt. El navegador
+solo llama al BFF y nunca recibe la clave ni contacta directamente a DeepSeek.
 
 ### Cookies de autenticación
 

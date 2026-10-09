@@ -91,6 +91,9 @@ No guardes credenciales reales en el repositorio.
 - `POST /admin/modules` y `PATCH /admin/modules/{id}` — crea y actualiza módulos.
 - `POST /admin/modules/{id}/lessons`, `GET /admin/lessons/{id}` y `PATCH /admin/lessons/{id}` — gestión de lecciones para administradores.
 - `POST /admin/content-media/import` y `DELETE /admin/content-media` — importación segura y limpieza de medios para administradores.
+- `POST /educator/content-suggestions/modules` y `POST /educator/content-suggestions/lessons` — generan propuestas estructuradas para `admin` y `trainer`; no persisten generaciones descartadas.
+- `POST /educator/content-suggestions/modules/{id}/apply` y `POST /educator/content-suggestions/lessons/{id}/apply` — aplican selectivamente objetivos, estructura, formatos, orden y bloques seguros de Tiptap.
+- `GET /educator/content-revisions/{target_type}/{target_id}`, `POST /educator/content-revisions/{revision_id}/publish` y `DELETE /educator/content-revisions/{revision_id}` — revisan, publican o descartan cambios IA pendientes.
 - `GET /internal/content-media/cleanup` — limpieza protegida de blobs de contenido huérfanos; Vercel Cron lo ejecuta diariamente.
 - `GET /me/progress` — progreso derivado de evaluaciones; la finalización manual dejó de ser válida.
 - `GET /me/analytics?period=7d|30d|90d|all` — tendencias privadas de avance, calificación y actividad del estudiante.
@@ -104,6 +107,16 @@ Las cookies usan `COOKIE_SECURE=true` en producción. Si frontend y backend vive
 Las fotos de perfil usan un Blob Store privado de Vercel. Configura `BLOB_STORE_ID` y `BLOB_READ_WRITE_TOKEN` en el backend; nunca expongas el token al frontend. Se aceptan imágenes JPG, PNG y WebP de máximo 3 MB.
 
 Las imágenes, videos y portadas de módulos usan un Blob Store público separado. Configura `CONTENT_BLOB_STORE_ID`, `CONTENT_BLOB_READ_WRITE_TOKEN` y `CONTENT_BLOB_PUBLIC_HOST`. El contenido público puede ser leído por cualquiera que conozca su URL. Los límites predeterminados son 10 MB para imágenes y 100 MB para videos.
+
+La autoría asistida por IA conserva los objetivos y el plan instruccional
+estructurado en módulos y lecciones. Solo `admin` y `trainer` pueden generar o
+aplicar propuestas. El proveedor recibe texto educativo anonimizado y devuelve
+JSON validado; los bloques aplicables se convierten a un subconjunto seguro de
+Tiptap sin HTML, URLs ni medios externos. Una propuesta nunca publica por sí
+sola. Si el destino ya está publicado, aplicar una propuesta crea una revisión
+en `content_revisions`; el estudiante sigue viendo la versión publicada hasta
+que un usuario editorial publique explícitamente la revisión. El control de
+concurrencia usa `updated_at` y obliga a regenerar si el contenido cambió.
 
 Para habilitarlo en Vercel, crea un Blob Store dedicado con acceso público, copia su store ID y token read-write en las variables anteriores y configura el mismo token en el entorno server-side del frontend. El endpoint de eliminación rechaza pathnames todavía referenciados; los archivos abandonados se recuperan mediante el cron diario. Para convertir contenido externo existente antes de aplicar la validación estricta, ejecuta primero `uv run python -m scripts.migrate_content_media` en modo dry-run y luego añade `--apply`.
 

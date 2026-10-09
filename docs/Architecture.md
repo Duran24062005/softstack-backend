@@ -93,6 +93,39 @@ El rol `trainer` puede editar contenido y evaluaciones y consultar analítica so
 
 El seed inicial se ejecuta explícitamente con `uv run python -m scripts.seed_content` y no se dispara durante el arranque de la API.
 
+## Vertical implementada: autoría asistida por IA
+
+El asistente de contenido mantiene la misma separación por capas que las demás
+verticales:
+
+```text
+Next.js BFF -> /educator/content-suggestions -> ContentSuggestionService
+                                            -> ContentSuggestionProvider
+                                            -> DeepSeek server-side
+                                            -> MongoDB modules/lessons/content_revisions
+```
+
+`ContentSuggestionProvider` es independiente de `QuestionProvider`. Recibe
+solamente contexto educativo necesario y devuelve modelos Pydantic para un plan
+instruccional, una secuencia de lecciones o bloques Tiptap seguros. El prompt
+redacta identificadores personales conocidos, y la respuesta se rechaza si no
+es JSON válido, no cumple el esquema o contiene bloques no permitidos.
+
+La generación no crea documentos de lección ni guarda historial de propuestas
+descartadas. El frontend muestra cada sección de forma revisable y el usuario
+editorial decide qué aplicar. En borradores, la aplicación actualiza solo las
+secciones seleccionadas. En contenido publicado, la aplicación crea una
+revisión pendiente en `content_revisions`; el contenido público permanece
+intacto hasta `POST .../publish`. `updated_at` se guarda como versión base y
+protege contra sobrescribir una edición concurrente. Descartar elimina la
+revisión pendiente en lugar de conservar una generación como historial. El flujo de versiones es
+exclusivo de la asistencia IA y no cambia la edición manual existente.
+
+Los estudiantes reciben `learning_objectives` y el resumen estructural aprobado
+desde las respuestas públicas de módulos y lecciones. Los trainers conservan
+sus permisos editoriales actuales; la administración de usuarios, trainers,
+configuración y reinicios continúa siendo exclusiva de `admin`.
+
 La superficie de evaluaciones mantiene pruebas aisladas por capa: los servicios usan repositorios falsos, las rutas se prueban con dependencias explícitas y el proveedor IA se sustituye por dobles que entregan respuestas válidas o inválidas. La CI exige cobertura de ramas focalizada de al menos 95 % y verifica que el contrato OpenAPI de intentos permanezca publicado.
 
 ## Core y middlewares
