@@ -132,6 +132,32 @@ El seed es idempotente: puede repetirse sin duplicar módulos ni lecciones.
 
 El catálogo inicial contiene cinco módulos y trece lecciones sobre presencia virtual, CV y filtros ATS, marca personal y mercado oculto, comunicación en entrevistas, y negociación y seguimiento. La estructura detallada está documentada en [`prds/002-learning-foundation.md`](./prds/002-learning-foundation.md).
 
+### Fixture demo local
+
+Para validar la experiencia completa con datos realistas, carga además el fixture
+de usuarios, evaluaciones, progreso y analítica:
+
+```bash
+SEED_DEMO_PASSWORD='una-clave-local-de-al-menos-8-caracteres' uv run python -m scripts.seed_demo --confirm
+```
+
+El fixture es idempotente y no elimina datos. Administra únicamente documentos con
+el namespace `softstack.demo.v1`, usa seis cuentas del dominio reservado
+`softstack.test` y no crea tokens, fotos, blobs ni revisiones de contenido.
+
+| Rol | Correo |
+| --- | --- |
+| Admin | `admin@softstack.test` |
+| Trainer | `trainer@softstack.test` |
+| Estudiante | `ana.martinez@softstack.test` |
+| Estudiante | `bruno.gomez@softstack.test` |
+| Estudiante | `camila.ortiz@softstack.test` |
+| Pendiente | `diego.silva@softstack.test` |
+
+La contraseña es la misma que se entrega por `SEED_DEMO_PASSWORD`. No ejecutes el
+fixture contra una base de producción. El alcance y las reglas están documentados
+en [`prds/011-demo-data-and-live-catalog.md`](./prds/011-demo-data-and-live-catalog.md).
+
 ## Despliegue
 
 El proyecto incluye `vercel.json` para Vercel. Define `MONGODB_URI` y `MONGODB_DATABASE` como variables de entorno en la plataforma.
